@@ -3,6 +3,10 @@ import 'dart:async';
 
 import 'package:flutter/services.dart';
 import 'package:flutter_igolf_viewer/flutter_igolf_viewer.dart';
+import 'package:flutter_igolf_viewer/flutter_igolf_viewer_method_channel.dart';
+
+const _igolfApiKey = String.fromEnvironment('IGOLF_API_KEY');
+const _igolfSecretKey = String.fromEnvironment('IGOLF_SECRET_KEY');
 
 void main() {
   runApp(const MyApp());
@@ -16,8 +20,8 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  String _platformVersion = 'Unknown';
-  final _flutterIgolfViewerPlugin = FlutterIgolfViewer();
+  final _channel = MethodChannelFlutterIgolfViewer();
+  String _numberOfCourses = '';
 
   @override
   void initState() {
@@ -27,14 +31,18 @@ class _MyAppState extends State<MyApp> {
 
   // Platform messages are asynchronous, so we initialize in an async method.
   Future<void> initPlatformState() async {
-    String platformVersion;
+    String data;
     // Platform messages may fail, so we use a try/catch PlatformException.
     // We also handle the message potentially returning null.
     try {
-      platformVersion =
-          await _flutterIgolfViewerPlugin.getPlatformVersion() ?? 'Unknown platform version';
-    } on PlatformException {
-      platformVersion = 'Failed to get platform version.';
+      await _channel.initialize(
+        apiKey: _igolfApiKey,
+        secretKey: _igolfSecretKey,
+      );
+
+      data = await _channel.getTypedCourseList(zipcode: '92108') ?? '';
+    } on PlatformException catch (e) {
+      data = 'PlatformException ${e.code}. ${e.message}';
     }
 
     // If the widget was removed from the tree while the asynchronous platform
@@ -43,7 +51,7 @@ class _MyAppState extends State<MyApp> {
     if (!mounted) return;
 
     setState(() {
-      _platformVersion = platformVersion;
+      _numberOfCourses = data;
     });
   }
 
@@ -51,11 +59,19 @@ class _MyAppState extends State<MyApp> {
   Widget build(BuildContext context) {
     return MaterialApp(
       home: Scaffold(
-        appBar: AppBar(
-          title: const Text('Plugin example app'),
-        ),
+        appBar: AppBar(title: const Text('Plugin example app')),
         body: Center(
-          child: Text('Running on: $_platformVersion\n'),
+          child: Column(
+            children: [
+              Text('Golf courses retrieved: $_numberOfCourses'),
+              const Expanded(
+                child: FlutterIgolfViewer(
+                  apiKey: _igolfApiKey,
+                  secretKey: _igolfSecretKey,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

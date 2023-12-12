@@ -8,7 +8,8 @@ abstract class FlutterIgolfViewerPlatform extends PlatformInterface {
 
   static final Object _token = Object();
 
-  static FlutterIgolfViewerPlatform _instance = MethodChannelFlutterIgolfViewer();
+  static FlutterIgolfViewerPlatform _instance =
+      MethodChannelFlutterIgolfViewer();
 
   /// The default instance of [FlutterIgolfViewerPlatform] to use.
   ///
@@ -23,7 +24,22 @@ abstract class FlutterIgolfViewerPlatform extends PlatformInterface {
     _instance = instance;
   }
 
-  Future<String?> getPlatformVersion() {
-    throw UnimplementedError('platformVersion() has not been implemented.');
+  Future<String?> initialize({
+    required String apiKey,
+    required String secretKey,
+  }) {
+    throw UnimplementedError('initialize() has not been implemented.');
+  }
+
+  Future<String?> getCourseDetails({required String courseId}) {
+    throw UnimplementedError('getCourseDetails() has not been implemented.');
+  }
+
+  Future<String?> getCourseList({required String zipcode}) {
+    throw UnimplementedError('getCourseList() has not been implemented.');
+  }
+
+  Future<String?> getTypedCourseList({required String zipcode}) {
+    throw UnimplementedError('getTypedCourseList() has not been implemented.');
   }
 }

@@ -10,8 +10,36 @@ class MethodChannelFlutterIgolfViewer extends FlutterIgolfViewerPlatform {
   final methodChannel = const MethodChannel('flutter_igolf_viewer');
 
   @override
-  Future<String?> getPlatformVersion() async {
-    final version = await methodChannel.invokeMethod<String>('getPlatformVersion');
-    return version;
+  Future<String?> initialize({
+    required String apiKey,
+    required String secretKey,
+  }) async {
+    final arguments = {'apiKey': apiKey, 'secretKey': secretKey};
+    return await methodChannel.invokeMethod<String>('initialize', arguments);
+  }
+
+  @override
+  Future<String?> getCourseDetails({required String courseId}) async {
+    final arguments = {'courseId': courseId};
+    return await methodChannel.invokeMethod<String>(
+      'getCourseDetails',
+      arguments,
+    );
+  }
+
+  @override
+  Future<String?> getCourseList({required String zipcode}) async {
+    // final arguments = {'active': 1, 'zipcode': '92108'};
+    final arguments = {'active': 1, 'zipcode': zipcode};
+    return await methodChannel.invokeMethod<String>('getCourseList', arguments);
+  }
+
+  @override
+  Future<String?> getTypedCourseList({required String zipcode}) async {
+    final arguments = {'active': 1, 'zipcode': zipcode};
+    return await methodChannel.invokeMethod<String>(
+      'getTypedCourseList',
+      arguments,
+    );
   }
 }

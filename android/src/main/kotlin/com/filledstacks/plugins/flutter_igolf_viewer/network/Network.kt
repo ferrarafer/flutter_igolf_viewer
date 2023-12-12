@@ -4,6 +4,8 @@ import android.util.Log
 import com.google.gson.Gson
 import com.l1inc.viewer.Course3DRenderer
 import com.filledstacks.plugins.flutter_igolf_viewer.network.request.BaseRequest
+import com.filledstacks.plugins.flutter_igolf_viewer.network.request.CourseListRequest
+import com.filledstacks.plugins.flutter_igolf_viewer.network.response.CourseListResponse
 import com.filledstacks.plugins.flutter_igolf_viewer.network.response.CourseScorecardDetailsResponse
 import okhttp3.ResponseBody
 import retrofit2.Call
@@ -15,6 +17,73 @@ class Network {
 
     private var service = NetworkService.provideService()
 
+
+    fun getCourseDetails(
+        apiKey: String,
+        secretKey: String,
+        courseId: String,
+        onLoaded: (courseDetails: String) -> Unit
+    ) {
+        service.courseDetails(
+            Auth.getUrlForRequest("CourseDetails", apiKey, secretKey),
+            BaseRequest(courseId)
+        ).enqueue(object : Callback<ResponseBody> {
+            override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
+
+            }
+
+            override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
+                onLoaded.invoke(response.body()?.string() ?: "")
+            }
+
+        })
+    }
+
+    fun getCourseList(
+        apiKey: String,
+        secretKey: String,
+        courseListRequest: CourseListRequest,
+        onLoaded: (courseList: String) -> Unit
+    ) {
+        service.courseList(
+            Auth.getUrlForRequest("CourseList", apiKey, secretKey),
+            courseListRequest
+        ).enqueue(object : Callback<ResponseBody> {
+            override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
+
+            }
+
+            override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
+                onLoaded.invoke(response.body()?.string() ?: "")
+            }
+
+        })
+    }
+
+    fun getTypedCourseList(
+        apiKey: String,
+        secretKey: String,
+        courseListRequest: CourseListRequest,
+        onLoaded: (courseListResponse: CourseListResponse) -> Unit
+    ) {
+        service.courseList(
+            Auth.getUrlForRequest("CourseList", apiKey, secretKey),
+            courseListRequest
+        ).enqueue(object : Callback<ResponseBody> {
+            override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
+
+            }
+
+            override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
+                val courseListResponse = Gson().fromJson(
+                    response.body()?.string() ?: "",
+                    CourseListResponse::class.java
+                )
+                onLoaded.invoke(courseListResponse)
+            }
+
+        })
+    }
 
     fun loadCourseData(
         apiKey: String,
