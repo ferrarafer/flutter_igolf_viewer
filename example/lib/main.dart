@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 
 import 'package:flutter/services.dart';
+import 'package:flutter_igolf_viewer/flutter_igolf_course_details_api_method_channel.dart';
 import 'package:flutter_igolf_viewer/flutter_igolf_viewer.dart';
-import 'package:flutter_igolf_viewer/flutter_igolf_viewer_method_channel.dart';
 
 const _igolfApiKey = String.fromEnvironment('IGOLF_API_KEY');
 const _igolfSecretKey = String.fromEnvironment('IGOLF_SECRET_KEY');
@@ -20,7 +20,7 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  final _channel = MethodChannelFlutterIgolfViewer();
+  final _channel = MethodChannelFlutterIgolfCourseDetailsApi();
   String _numberOfCourses = '';
 
   @override
@@ -68,6 +68,7 @@ class _MyAppState extends State<MyApp> {
                 child: FlutterIgolfViewer(
                   apiKey: _igolfApiKey,
                   secretKey: _igolfSecretKey,
+                  courseId: "x61wljOp5MS7",
                 ),
               ),
             ],

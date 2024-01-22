@@ -23,10 +23,17 @@ class FlutterIgolfViewerPlugin: FlutterPlugin, MethodCallHandler {
   private var initialized = false
 
   override fun onAttachedToEngine(flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
-    channel = MethodChannel(flutterPluginBinding.binaryMessenger, "flutter_igolf_viewer")
+    channel = MethodChannel(
+      flutterPluginBinding.binaryMessenger,
+      "plugins.filledstacks/flutter_igolf_course_details_api"
+    )
     channel.setMethodCallHandler(this)
 
-    flutterPluginBinding.platformViewRegistry.registerViewFactory("flutter_igolf_viewer", FlutterIgolfViewerFactory())
+    /// PlatformView registration
+    flutterPluginBinding.platformViewRegistry.registerViewFactory(
+      "flutter_igolf_viewer",
+      FlutterIgolfViewerFactory(flutterPluginBinding.binaryMessenger)
+    )
   }
 
   override fun onMethodCall(call: MethodCall, result: Result) {
@@ -36,8 +43,10 @@ class FlutterIgolfViewerPlugin: FlutterPlugin, MethodCallHandler {
 
     when (call.method) {
       "initialize" -> onInitialize(call, result)
+      "getCountryList" -> onGetCountryList(call, result)
       "getCourseDetails" -> onGetCourseDetails(call, result)
       "getCourseList" -> onGetCourseList(call, result)
+      "getStateList" -> onGetStateList(call, result)
       "getTypedCourseList" -> onGetTypedCourseList(call, result)
       else -> result.notImplemented()
     }
@@ -48,7 +57,7 @@ class FlutterIgolfViewerPlugin: FlutterPlugin, MethodCallHandler {
     channel.setMethodCallHandler(null)
   }
 
-  private fun onInitialize(call: MethodCall, result: MethodChannel.Result ) {
+  private fun onInitialize(call: MethodCall, result: MethodChannel.Result) {
     apiKey = call.argument("apiKey") ?: ""
     secretKey = call.argument("secretKey") ?: ""
     if (apiKey.length == 0 || secretKey.length == 0) {
@@ -58,6 +67,17 @@ class FlutterIgolfViewerPlugin: FlutterPlugin, MethodCallHandler {
 
     initialized = true
     result.success("Flutter iGolf Viewer plugin initialized")
+  }
+
+  private fun onGetCountryList(call: MethodCall, result: MethodChannel.Result ) {
+    val continentId = call.argument<String>("id_continent") ?: "All"
+    if (continentId.length == 0) {
+      result.error("INVALIDARGS", "You must provide valid continent ID", null)
+      return
+    }
+    Network().getCountryList(apiKey, secretKey, continentId) { countryList ->
+      result.success(countryList)
+    }
   }
 
   private fun onGetCourseDetails(call: MethodCall, result: MethodChannel.Result ) {
@@ -74,16 +94,27 @@ class FlutterIgolfViewerPlugin: FlutterPlugin, MethodCallHandler {
 
   private fun onGetCourseList(call: MethodCall, result: MethodChannel.Result ) {
     val active = call.argument("active") ?: 1
-    val zipcode = call.argument("zipcode") ?: ""
-    if (zipcode.length == 0) {
-      result.error("INVALIDARGS", "You must provide a zipcode", null)
+    val stateId = call.argument("id_state") ?: -1
+    if (stateId == -1) {
+      result.error("INVALIDARGS", "You must provide a valid state ID", null)
       return
     }
     
-    val courseListRequest = CourseListRequest(active = active, zipcode = zipcode)
+    val courseListRequest = CourseListRequest(active = active, stateId = stateId)
 
     Network().getCourseList(apiKey, secretKey, courseListRequest) { courseList ->
       result.success(courseList)
+    }
+  }
+
+  private fun onGetStateList(call: MethodCall, result: MethodChannel.Result ) {
+    val countryId = call.argument<Int>("id_country") ?: -1
+    if (countryId == -1) {
+      result.error("INVALIDARGS", "You must provide valid country ID", null)
+      return
+    }
+    Network().getStateList(apiKey, secretKey, countryId) { stateList ->
+      result.success(stateList)
     }
   }
 

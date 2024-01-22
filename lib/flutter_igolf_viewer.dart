@@ -4,10 +4,12 @@ import 'package:flutter/services.dart';
 class FlutterIgolfViewer extends StatelessWidget {
   final String apiKey;
   final String secretKey;
+  final String courseId;
   const FlutterIgolfViewer({
     super.key,
     required this.apiKey,
     required this.secretKey,
+    required this.courseId,
   });
 
   @override
@@ -18,6 +20,7 @@ class FlutterIgolfViewer extends StatelessWidget {
     final Map<String, dynamic> creationParams = {
       "apiKey": apiKey,
       "secretKey": secretKey,
+      "courseId": courseId,
     };
 
     return AndroidView(
