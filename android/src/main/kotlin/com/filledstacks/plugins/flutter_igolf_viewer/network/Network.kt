@@ -4,7 +4,9 @@ import android.util.Log
 import com.google.gson.Gson
 import com.l1inc.viewer.Course3DRenderer
 import com.filledstacks.plugins.flutter_igolf_viewer.network.request.BaseRequest
+import com.filledstacks.plugins.flutter_igolf_viewer.network.request.CountryListRequest
 import com.filledstacks.plugins.flutter_igolf_viewer.network.request.CourseListRequest
+import com.filledstacks.plugins.flutter_igolf_viewer.network.request.StateListRequest
 import com.filledstacks.plugins.flutter_igolf_viewer.network.response.CourseListResponse
 import com.filledstacks.plugins.flutter_igolf_viewer.network.response.CourseScorecardDetailsResponse
 import okhttp3.ResponseBody
@@ -17,6 +19,26 @@ class Network {
 
     private var service = NetworkService.provideService()
 
+    fun getCountryList(
+        apiKey: String,
+        secretKey: String,
+        continentId: String,
+        onLoaded: (countryList: String) -> Unit
+    ) {
+        service.countryList(
+            Auth.getUrlForRequest("CountryList", apiKey, secretKey),
+            CountryListRequest(continentId)
+        ).enqueue(object : Callback<ResponseBody> {
+            override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
+
+            }
+
+            override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
+                onLoaded.invoke(response.body()?.string() ?: "")
+            }
+
+        })
+    }
 
     fun getCourseDetails(
         apiKey: String,
@@ -48,6 +70,27 @@ class Network {
         service.courseList(
             Auth.getUrlForRequest("CourseList", apiKey, secretKey),
             courseListRequest
+        ).enqueue(object : Callback<ResponseBody> {
+            override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
+
+            }
+
+            override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
+                onLoaded.invoke(response.body()?.string() ?: "")
+            }
+
+        })
+    }
+
+    fun getStateList(
+        apiKey: String,
+        secretKey: String,
+        countryId: Int,
+        onLoaded: (stateList: String) -> Unit
+    ) {
+        service.stateList(
+            Auth.getUrlForRequest("StateList", apiKey, secretKey),
+            StateListRequest(countryId)
         ).enqueue(object : Callback<ResponseBody> {
             override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
 
