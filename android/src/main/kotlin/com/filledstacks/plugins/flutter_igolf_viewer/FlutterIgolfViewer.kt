@@ -2,6 +2,7 @@ package com.filledstacks.plugins.flutter_igolf_viewer
 
 import android.content.Context
 import android.graphics.Color
+import android.location.Location
 import android.view.View
 import android.widget.TextView
 import com.filledstacks.plugins.flutter_igolf_viewer.network.Network
@@ -32,6 +33,19 @@ internal class FlutterIgolfViewer(
         methodChannel.setMethodCallHandler(this)
 
         course3DViewer = Course3DViewer(context)
+
+        course3DViewer.viewer.setCurrentCourseChangedListener {
+            println("=========== setCurrentCourseChangedListener FINISHED ==========")
+            println("=========== setCurrentCourseChangedListener FINISHED ==========")
+            println("=========== setCurrentCourseChangedListener FINISHED ==========")
+        }
+
+        course3DViewer.viewer.setFrameRenderListener {
+            println("=========== setFrameRenderListener FINISHED ==========")
+            println("=========== setFrameRenderListener FINISHED ==========")
+            println("=========== setFrameRenderListener FINISHED ==========")
+        }
+
         loadCourseData(
             creationParams.get("apiKey"),
             creationParams.get("secretKey"),
@@ -48,7 +62,12 @@ internal class FlutterIgolfViewer(
             "setCurrentHole" -> setCurrentHole(call, result)
             "set2DNavigationMode" -> set2DNavigationMode(call, result)
             "set3DNavigationMode" -> set3DNavigationMode(call, result)
+            "setFlyoverNavigationMode" -> setFlyoverNavigationMode(call, result)
             "setNextNavigationMode" -> setNextNavigationMode(call, result)
+            "setCartLocationVisible" -> setCartLocationVisible(call, result)
+            "setTeeBoxAsCurrentLocation" -> setTeeBoxAsCurrentLocation(call, result)
+            "setCurrentLocationGPS" -> setCurrentLocationGPS(call, result)
+            "setFrameRenderListener" -> setFrameRenderListener(call, result)
             else -> result.notImplemented()
         }
     }
@@ -102,7 +121,6 @@ internal class FlutterIgolfViewer(
 
     private fun getCurrentHole(call: MethodCall, result: MethodChannel.Result) {
         val currentHole = course3DViewer.viewer.getCurrentHole()
-        println("currentHole:$currentHole")
         result.success(currentHole)
     }
 
@@ -120,7 +138,15 @@ internal class FlutterIgolfViewer(
 
     private fun setCurrentHole(call: MethodCall, result: MethodChannel.Result) {
         val hole = call.argument<Int>("hole") ?: -1
-        course3DViewer.viewer.setCurrentHole(hole, null, false, null)
+        val initialTeeBox = call.argument<Int>("initialTeeBox") ?: null
+        println(hole)
+        println(initialTeeBox)
+        course3DViewer.viewer.setCurrentHole(
+            hole,
+            Course3DRendererBase.NavigationMode.NavigationMode2D,
+            true,
+            initialTeeBox,
+        )
         result.success("Set current hole to $hole")
     }
 
@@ -147,9 +173,42 @@ internal class FlutterIgolfViewer(
         course3DViewer.viewer.setNavigationMode(Course3DRendererBase.NavigationMode.OverallHole3)
     }
 
+    private fun setFlyoverNavigationMode(call: MethodCall, result: MethodChannel.Result) {
+        course3DViewer.viewer.setNavigationMode(Course3DRendererBase.NavigationMode.Flyover)
+    }
+
     private fun setNextNavigationMode(call: MethodCall, result: MethodChannel.Result) {
         val nextMode = course3DViewer.viewer.getPendingNavigationMode()
-        println(nextMode)
         course3DViewer.viewer.setNavigationMode(nextMode)
+    }
+
+    private fun setCartLocationVisible(call: MethodCall, result: MethodChannel.Result) {
+        val isCartLocationVisible = call.argument<Boolean>("cartLocationVisible") ?: false
+        course3DViewer.viewer.setCartLocationVisible(isCartLocationVisible)
+    }
+
+    private fun setTeeBoxAsCurrentLocation(call: MethodCall, result: MethodChannel.Result) {
+        val selectedTeeBox = call.argument<Int>("selectedTeeBox") ?: 0
+        course3DViewer.viewer.setTeeboxAsCurrentLocation(selectedTeeBox)
+    }
+
+    private fun setCurrentLocationGPS(call: MethodCall, result: MethodChannel.Result) {
+        val location = Location("")
+        location.setLatitude(call.argument<Double>("latitude") ?: 0.0)
+        location.setLongitude(call.argument<Double>("longitude") ?: 0.0)
+        val updateCameraPos = call.argument<Boolean>("updateCameraPos") ?: false
+        course3DViewer.viewer.setCurrentLocationGPS(
+            location,
+            updateCameraPos,
+        );
+    }
+
+    /// Listener, which will be called when frame finished rendering.
+    private fun setFrameRenderListener(call: MethodCall, result: MethodChannel.Result) {
+        course3DViewer.viewer.setFrameRenderListener {
+            println("=========== setFrameRenderListener FINISHED ==========")
+            println("=========== setFrameRenderListener FINISHED ==========")
+            println("=========== setFrameRenderListener FINISHED ==========")
+        }
     }
 }

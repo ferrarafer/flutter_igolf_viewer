@@ -33,11 +33,35 @@ abstract class FlutterIgolfCourseDetailsApiPlatform extends PlatformInterface {
 
   Future<String?> getCourseDetails({
     int? countryFormat,
-    int? detailLevel,
     required String courseId,
+    int? detailLevel,
     int? stateFormat,
   }) {
     throw UnimplementedError('getCourseDetails() has not been implemented.');
+  }
+
+  Future<String?> getCourseTeeDetails({
+    required String courseId,
+    int? detailLevel,
+  }) {
+    throw UnimplementedError('getCourseTeeDetails() has not been implemented.');
+  }
+
+  Future<String?> getCourseScorecardDetails({
+    required String courseId,
+  }) {
+    throw UnimplementedError(
+      'getCourseScorecardDetails() has not been implemented.',
+    );
+  }
+
+  Future<String?> getCourseScorecardList({
+    required List<String> coursesIds,
+    required int courseName,
+  }) {
+    throw UnimplementedError(
+      'getCourseScorecardList() has not been implemented.',
+    );
   }
 
   Future<String?> getCountryList({required String continentId}) {

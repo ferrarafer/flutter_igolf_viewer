@@ -3,7 +3,8 @@ import 'package:flutter/services.dart';
 
 import 'flutter_igolf_course_details_api_platform_interface.dart';
 
-/// An implementation of [FlutterIgolfCourseDetailsApiPlatform] that uses method channels.
+/// An implementation of [FlutterIgolfCourseDetailsApiPlatform] that uses
+/// method channels.
 class MethodChannelFlutterIgolfCourseDetailsApi
     extends FlutterIgolfCourseDetailsApiPlatform {
   /// The method channel used to interact with the native platform.
@@ -38,6 +39,43 @@ class MethodChannelFlutterIgolfCourseDetailsApi
       'detailLevel': detailLevel,
       'id_course': courseId,
       'stateFormat': stateFormat,
+    });
+  }
+
+  /// Returns slope, rating, name, color, yardage for men's and women's
+  /// teeboxes at a course.
+  @override
+  Future<String?> getCourseTeeDetails({
+    int? detailLevel,
+    required String courseId,
+  }) async {
+    return await methodChannel.invokeMethod<String>('getCourseTeeDetails', {
+      'detailLevel': detailLevel,
+      'id_course': courseId,
+    });
+  }
+
+  /// Request returns par and handicap information for a particular course.
+  @override
+  Future<String?> getCourseScorecardDetails({
+    required String courseId,
+  }) async {
+    return await methodChannel.invokeMethod<String>(
+      'getCourseScorecardDetails',
+      {'id_course': courseId},
+    );
+  }
+
+  /// Request returns par and handicap information for an array of up to 20
+  /// courses submitted.
+  @override
+  Future<String?> getCourseScorecardList({
+    required List<String> coursesIds,
+    required int courseName,
+  }) async {
+    return await methodChannel.invokeMethod<String>('getCourseScorecardList', {
+      'id_courseArray': coursesIds,
+      'courseName': courseName,
     });
   }
 

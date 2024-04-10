@@ -5,6 +5,9 @@ import com.google.gson.Gson
 import com.l1inc.viewer.Course3DRenderer
 import com.filledstacks.plugins.flutter_igolf_viewer.network.request.BaseRequest
 import com.filledstacks.plugins.flutter_igolf_viewer.network.request.CountryListRequest
+import com.filledstacks.plugins.flutter_igolf_viewer.network.request.CourseDetailsRequest
+import com.filledstacks.plugins.flutter_igolf_viewer.network.request.CourseScorecardListRequest
+import com.filledstacks.plugins.flutter_igolf_viewer.network.request.CourseTeeDetailsRequest
 import com.filledstacks.plugins.flutter_igolf_viewer.network.request.CourseListRequest
 import com.filledstacks.plugins.flutter_igolf_viewer.network.request.StateListRequest
 import com.filledstacks.plugins.flutter_igolf_viewer.network.response.CourseListResponse
@@ -43,12 +46,12 @@ class Network {
     fun getCourseDetails(
         apiKey: String,
         secretKey: String,
-        courseId: String,
+        courseDetailsRequest: CourseDetailsRequest,
         onLoaded: (courseDetails: String) -> Unit
     ) {
         service.courseDetails(
             Auth.getUrlForRequest("CourseDetails", apiKey, secretKey),
-            BaseRequest(courseId)
+            courseDetailsRequest
         ).enqueue(object : Callback<ResponseBody> {
             override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
 
@@ -123,6 +126,69 @@ class Network {
                     CourseListResponse::class.java
                 )
                 onLoaded.invoke(courseListResponse)
+            }
+
+        })
+    }
+
+    fun getCourseTeeDetails(
+        apiKey: String,
+        secretKey: String,
+        courseTeeDetailsRequest: CourseTeeDetailsRequest,
+        onLoaded: (courseTeeDetails: String) -> Unit
+    ) {
+        service.courseTeeDetails(
+            Auth.getUrlForRequest("CourseTeeDetails", apiKey, secretKey),
+            courseTeeDetailsRequest
+        ).enqueue(object : Callback<ResponseBody> {
+            override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
+
+            }
+
+            override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
+                onLoaded.invoke(response.body()?.string() ?: "")
+            }
+
+        })
+    }
+
+    fun getCourseScorecardDetails(
+        apiKey: String,
+        secretKey: String,
+        courseId: String,
+        onLoaded: (courseScorecardDetails: String) -> Unit
+    ) {
+        service.courseScorecardDetails(
+            Auth.getUrlForRequest("CourseScorecardDetails", apiKey, secretKey),
+            BaseRequest(courseId)
+        ).enqueue(object : Callback<ResponseBody> {
+            override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
+
+            }
+
+            override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
+                onLoaded.invoke(response.body()?.string() ?: "")
+            }
+
+        })
+    }
+
+    fun getCourseScorecardList(
+        apiKey: String,
+        secretKey: String,
+        courseScorecardListRequest: CourseScorecardListRequest,
+        onLoaded: (courseScorecardList: String) -> Unit
+    ) {
+        service.courseScorecardList(
+            Auth.getUrlForRequest("CourseScorecardList", apiKey, secretKey),
+            courseScorecardListRequest
+        ).enqueue(object : Callback<ResponseBody> {
+            override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
+
+            }
+
+            override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
+                onLoaded.invoke(response.body()?.string() ?: "")
             }
 
         })
