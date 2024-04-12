@@ -10,7 +10,7 @@ class MethodChannelFlutterIgolfCourseDetailsApi
   /// The method channel used to interact with the native platform.
   @visibleForTesting
   final methodChannel = const MethodChannel(
-    'plugins.filledstacks/flutter_igolf_course_details_api',
+    'plugins.filledstacks.flutter_igolf_course/course_details_api',
   );
 
   /// Sets the Api Key and Secret Key to communicate with Api.
