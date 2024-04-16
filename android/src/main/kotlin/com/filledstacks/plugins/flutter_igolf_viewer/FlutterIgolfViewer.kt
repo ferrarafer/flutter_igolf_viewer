@@ -27,8 +27,10 @@ internal class FlutterIgolfViewer(
     private val course3DViewer: Course3DViewer
 
     private val methodChannel: MethodChannel = MethodChannel(
-        messenger, "plugins.filledstacks/flutter_igolf_viewer"
+        messenger, "plugins.filledstacks.flutter_igolf_viewer/course_viewer_method"
     )
+
+    private val event : CourseViewerEventChannel = eventChannel
 
     init {
         if (creationParams == null) {
@@ -40,7 +42,28 @@ internal class FlutterIgolfViewer(
         course3DViewer = Course3DViewer(context)
 
         course3DViewer.viewer.setCurrentCourseChangedListener {
-            eventChannel.sendEvent("COURSE_LOADED")
+            eventChannel.sendEvent("CURRENT_COURSE_CHANGED")
+        }
+
+//        course3DViewer.viewer.setCurrentHoleChangedListener {
+//            eventChannel.sendEvent("CURRENT_HOLE_CHANGED")
+//        }
+
+        course3DViewer.viewer.setFlyoverFinishListener {
+            eventChannel.sendEvent("FLYOVER_FINISHED")
+        }
+
+        course3DViewer.viewer.setGreenPositionChangeListener { greenPosition ->
+            println("Green Position: $greenPosition")
+            eventChannel.sendEvent("GREEN_POSITION_CHANGED")
+        }
+
+//        course3DViewer.viewer.setHoleLoadingStateChangedListener {
+//            eventChannel.sendEvent("HOLE_LOADING_STATE_CHANGED")
+//        }
+
+        course3DViewer.viewer.setNavigationModeChangedListener {
+            eventChannel.sendEvent("NAVIGATION_MODE_CHANGED")
         }
 
         loadCourseData(
@@ -56,6 +79,47 @@ internal class FlutterIgolfViewer(
 
     override fun dispose() {
         course3DViewer.viewer.onDestroy()
+        methodChannel.setMethodCallHandler(null)
+    }
+
+    private fun loadCourseData(apiKey: Any?, secretKey: Any?, courseId: Any?) {
+        if (apiKey !is String || apiKey.isBlank()) {
+            throw RuntimeException("API key is required")
+        }
+
+        if (secretKey !is String || secretKey.isBlank()) {
+            throw RuntimeException("Secret key is required")
+        }
+
+        if (courseId !is String || courseId.isBlank()) {
+            throw RuntimeException("Course ID is required")
+        }
+
+        Network().loadCourseData(apiKey, secretKey, courseId) { parDataMap, vectorDataJsonMap ->
+            initAndShowViewer(parDataMap, vectorDataJsonMap)
+            event.sendEvent(vectorDataJsonMap)
+        }
+    }
+
+    private fun initAndShowViewer(
+        parDataMap: Map<String?, Array<Int>?>,
+        vectorDataJsonMap: HashMap<String?, String?>
+    ) {
+        course3DViewer.viewer.init(
+            vectorDataJsonMap,
+            false,
+            true,
+            parDataMap,
+            null,
+            true,
+            null
+        )
+        course3DViewer.viewer.setCurrentHole(
+            1,
+            Course3DRendererBase.NavigationMode.OverallHole3,
+            false,
+            0
+        )
     }
 
     override fun onMethodCall(call: MethodCall, result: MethodChannel.Result) {
@@ -74,45 +138,6 @@ internal class FlutterIgolfViewer(
             "setCurrentLocationGPS" -> setCurrentLocationGPS(call, result)
             else -> result.notImplemented()
         }
-    }
-
-    private fun loadCourseData(apiKey: Any?, secretKey: Any?, courseId: Any?) {
-        if (apiKey !is String || apiKey.isBlank()) {
-            throw RuntimeException("API key is required")
-        }
-
-        if (secretKey !is String || secretKey.isBlank()) {
-            throw RuntimeException("Secret key is required")
-        }
-
-        if (courseId !is String || courseId.isBlank()) {
-            throw RuntimeException("Course ID is required")
-        }
-
-        Network().loadCourseData(apiKey, secretKey, courseId) { parDataMap, vectorDataJsonMap ->
-            initAndShowViewer(parDataMap, vectorDataJsonMap)
-        }
-    }
-
-    private fun initAndShowViewer(
-        parDataMap: Map<String?, Array<Int>?>,
-        vectorDataJsonMap: HashMap<String?, String?>
-    ) {
-        course3DViewer.viewer.init(
-            vectorDataJsonMap,
-            false,
-            true,
-            parDataMap,
-            null,
-            false,
-            null
-        )
-        course3DViewer.viewer.setCurrentHole(
-            1,
-            Course3DRendererBase.NavigationMode.NavigationMode2D,
-            false,
-            0
-        )
     }
 
     private fun getCurrentHole(call: MethodCall, result: MethodChannel.Result) {
@@ -135,11 +160,9 @@ internal class FlutterIgolfViewer(
     private fun setCurrentHole(call: MethodCall, result: MethodChannel.Result) {
         val hole = call.argument<Int>("hole") ?: -1
         val initialTeeBox = call.argument<Int>("initialTeeBox") ?: null
-        println(hole)
-        println(initialTeeBox)
         course3DViewer.viewer.setCurrentHole(
             hole,
-            Course3DRendererBase.NavigationMode.NavigationMode2D,
+            Course3DRendererBase.NavigationMode.OverallHole3,
             true,
             initialTeeBox,
         )
@@ -149,43 +172,39 @@ internal class FlutterIgolfViewer(
     private fun setNavigationMode(call: MethodCall, result: MethodChannel.Result) {
         val mode = call.argument<String>("mode")
         result.success("Result from native side for $mode")
-/**
-        course3DViewer.viewer.setNavigationMode(Course3DRenderer.DEFAULT_OVERALL_MODE)
-
-        course3DViewer.viewer.setCurrentHole(
-            2,
-            Course3DRendererBase.NavigationMode.NavigationMode2D,
-            false,
-            2
-        )
-        **/
     }
 
     private fun set2DNavigationMode(call: MethodCall, result: MethodChannel.Result) {
         course3DViewer.viewer.setNavigationMode(Course3DRendererBase.NavigationMode.NavigationMode2D)
+        result.success(null)
     }
 
     private fun set3DNavigationMode(call: MethodCall, result: MethodChannel.Result) {
         course3DViewer.viewer.setNavigationMode(Course3DRendererBase.NavigationMode.OverallHole3)
+        result.success(null)
     }
 
     private fun setFlyoverNavigationMode(call: MethodCall, result: MethodChannel.Result) {
         course3DViewer.viewer.setNavigationMode(Course3DRendererBase.NavigationMode.Flyover)
+        result.success(null)
     }
 
     private fun setNextNavigationMode(call: MethodCall, result: MethodChannel.Result) {
         val nextMode = course3DViewer.viewer.getPendingNavigationMode()
         course3DViewer.viewer.setNavigationMode(nextMode)
+        result.success(null)
     }
 
     private fun setCartLocationVisible(call: MethodCall, result: MethodChannel.Result) {
         val isCartLocationVisible = call.argument<Boolean>("cartLocationVisible") ?: false
         course3DViewer.viewer.setCartLocationVisible(isCartLocationVisible)
+        result.success(null)
     }
 
     private fun setTeeBoxAsCurrentLocation(call: MethodCall, result: MethodChannel.Result) {
         val selectedTeeBox = call.argument<Int>("selectedTeeBox") ?: 0
         course3DViewer.viewer.setTeeboxAsCurrentLocation(selectedTeeBox)
+        result.success(null)
     }
 
     private fun setCurrentLocationGPS(call: MethodCall, result: MethodChannel.Result) {
@@ -197,5 +216,6 @@ internal class FlutterIgolfViewer(
             location,
             updateCameraPos,
         );
+        result.success(null)
     }
 }

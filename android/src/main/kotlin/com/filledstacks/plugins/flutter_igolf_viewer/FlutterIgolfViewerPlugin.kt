@@ -4,7 +4,6 @@ import android.util.Log
 import androidx.annotation.NonNull
 import com.filledstacks.plugins.flutter_igolf_viewer.channels.CourseDetailsApiMethodChannel
 import com.filledstacks.plugins.flutter_igolf_viewer.channels.CourseViewerEventChannel
-import com.filledstacks.plugins.flutter_igolf_viewer.channels.CourseViewerMethodChannel
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
@@ -16,7 +15,6 @@ class FlutterIgolfViewerPlugin: FlutterPlugin {
 
   private lateinit var flutterIgolfViewerFactory: FlutterIgolfViewerFactory
   private lateinit var courseDetailsApiMethodChannel: CourseDetailsApiMethodChannel
-  //private lateinit var courseViewerMethodChannel: CourseViewerMethodChannel
   private lateinit var courseViewerEventChannel: CourseViewerEventChannel
 
   private var apiKey = ""
@@ -26,9 +24,6 @@ class FlutterIgolfViewerPlugin: FlutterPlugin {
   override fun onAttachedToEngine(binding: FlutterPlugin.FlutterPluginBinding) {
     /// Register CourseDetailsApiMethodChannel implementation
     courseDetailsApiMethodChannel = CourseDetailsApiMethodChannel(binding.binaryMessenger)
-
-    /// Register MethodChannel implementation
-    //courseViewerMethodChannel = CourseViewerMethodChannel(binding.binaryMessenger)
 
     /// Register EventChannel implementation
     courseViewerEventChannel = CourseViewerEventChannel(binding.binaryMessenger)
@@ -51,6 +46,5 @@ class FlutterIgolfViewerPlugin: FlutterPlugin {
     // Cleanup resources when the plugin is detached from the engine
     courseDetailsApiMethodChannel.cleanup()
     courseViewerEventChannel.cleanup()
-    //courseViewerMethodChannel.cleanup()
   }
 }
