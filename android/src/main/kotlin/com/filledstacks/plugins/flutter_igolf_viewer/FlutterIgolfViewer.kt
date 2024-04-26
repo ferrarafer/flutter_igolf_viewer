@@ -15,6 +15,7 @@ import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.EventChannel
 import io.flutter.plugin.platform.PlatformView
+import java.lang.RuntimeException
 
 internal class FlutterIgolfViewer(
     context: Context,
@@ -69,7 +70,8 @@ internal class FlutterIgolfViewer(
         loadCourseData(
             creationParams.get("apiKey"),
             creationParams.get("secretKey"),
-            creationParams.get("courseId")
+            creationParams.get("courseId"),
+            creationParams.get("isMetricUnits")
         )
     }
 
@@ -82,7 +84,7 @@ internal class FlutterIgolfViewer(
         methodChannel.setMethodCallHandler(null)
     }
 
-    private fun loadCourseData(apiKey: Any?, secretKey: Any?, courseId: Any?) {
+    private fun loadCourseData(apiKey: Any?, secretKey: Any?, courseId: Any?, isMetricUnits: Any?) {
         if (apiKey !is String || apiKey.isBlank()) {
             throw RuntimeException("API key is required")
         }
@@ -95,20 +97,25 @@ internal class FlutterIgolfViewer(
             throw RuntimeException("Course ID is required")
         }
 
+        if (isMetricUnits !is Boolean) {
+            throw RuntimeException("isMetricUnits should be Boolean")
+        }
+
         Network().loadCourseData(apiKey, secretKey, courseId) { parDataMap, vectorDataJsonMap ->
-            initAndShowViewer(parDataMap, vectorDataJsonMap)
+            initAndShowViewer(parDataMap, vectorDataJsonMap, isMetricUnits)
             event.sendEvent(vectorDataJsonMap)
         }
     }
 
     private fun initAndShowViewer(
         parDataMap: Map<String?, Array<Int>?>,
-        vectorDataJsonMap: HashMap<String?, String?>
+        vectorDataJsonMap: HashMap<String?, String?>,
+        isMetricUnits: Boolean
     ) {
         course3DViewer.viewer.init(
             vectorDataJsonMap,
             false,
-            true,
+            isMetricUnits,
             parDataMap,
             null,
             true,
@@ -128,6 +135,7 @@ internal class FlutterIgolfViewer(
             "getNavigationMode" -> getNavigationMode(call, result)
             "getNumHoles" -> getNumHoles(call, result)
             "getPendingNavigationMode" -> getPendingNavigationMode(call, result)
+            "isMetricUnits" -> isMetricUnits(call, result)
             "setCurrentHole" -> setCurrentHole(call, result)
             "set2DNavigationMode" -> set2DNavigationMode(call, result)
             "set3DNavigationMode" -> set3DNavigationMode(call, result)
@@ -136,6 +144,7 @@ internal class FlutterIgolfViewer(
             "setCartLocationVisible" -> setCartLocationVisible(call, result)
             "setTeeBoxAsCurrentLocation" -> setTeeBoxAsCurrentLocation(call, result)
             "setCurrentLocationGPS" -> setCurrentLocationGPS(call, result)
+            "setMeasurementSystem" -> setMeasurementSystem(call, result)
             else -> result.notImplemented()
         }
     }
@@ -155,6 +164,16 @@ internal class FlutterIgolfViewer(
 
     private fun getNumHoles(call: MethodCall, result: MethodChannel.Result) {
         result.success(course3DViewer.viewer.getNumHoles())
+    }
+
+    private fun isMetricUnits(call: MethodCall, result: MethodChannel.Result) {
+        result.success(course3DViewer.viewer.isMetricUnits())
+    }
+
+    private fun setMeasurementSystem(call: MethodCall, result: MethodChannel.Result) {
+        val isMetricUnits = call.argument<Boolean>("isMetricUnits") ?: false
+        course3DViewer.viewer.setMeasurementSystem(isMetricUnits)
+        result.success(null)
     }
 
     private fun setCurrentHole(call: MethodCall, result: MethodChannel.Result) {
