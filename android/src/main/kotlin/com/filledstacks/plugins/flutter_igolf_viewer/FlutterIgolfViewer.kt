@@ -55,7 +55,7 @@ internal class FlutterIgolfViewer(
         }
 
         course3DViewer.viewer.setGreenPositionChangeListener { greenPosition ->
-            println("Green Position: $greenPosition")
+//            println("Green Position: $greenPosition")
             eventChannel.sendEvent("GREEN_POSITION_CHANGED")
         }
 
@@ -178,11 +178,18 @@ internal class FlutterIgolfViewer(
 
     private fun setCurrentHole(call: MethodCall, result: MethodChannel.Result) {
         val hole = call.argument<Int>("hole") ?: -1
+        val navigationMode = call.argument<String>("navigationMode") ?: ""
         val initialTeeBox = call.argument<Int>("initialTeeBox") ?: null
+
+        var mode = Course3DRendererBase.NavigationMode.NavigationMode2D
+        if (navigationMode == "overallHole3") {
+            mode = Course3DRendererBase.NavigationMode.OverallHole3
+        }
+
         course3DViewer.viewer.setCurrentHole(
             hole,
-            Course3DRendererBase.NavigationMode.OverallHole3,
-            true,
+            mode,
+            false,
             initialTeeBox,
         )
         result.success("Set current hole to $hole")
@@ -231,10 +238,10 @@ internal class FlutterIgolfViewer(
         location.setLatitude(call.argument<Double>("latitude") ?: 0.0)
         location.setLongitude(call.argument<Double>("longitude") ?: 0.0)
         val updateCameraPos = call.argument<Boolean>("updateCameraPos") ?: false
-        course3DViewer.viewer.setCurrentLocationGPS(
+        val response = course3DViewer.viewer.setCurrentLocationGPS(
             location,
             updateCameraPos,
         );
-        result.success(null)
+        result.success(response)
     }
 }
