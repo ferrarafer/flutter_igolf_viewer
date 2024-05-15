@@ -55,7 +55,6 @@ internal class FlutterIgolfViewer(
         }
 
         course3DViewer.viewer.setGreenPositionChangeListener { greenPosition ->
-//            println("Green Position: $greenPosition")
             eventChannel.sendEvent("GREEN_POSITION_CHANGED")
         }
 
@@ -130,22 +129,26 @@ internal class FlutterIgolfViewer(
     }
 
     override fun onMethodCall(call: MethodCall, result: MethodChannel.Result) {
-        when (call.method) {
-            "getCurrentHole" -> getCurrentHole(call, result)
-            "getNavigationMode" -> getNavigationMode(call, result)
-            "getNumHoles" -> getNumHoles(call, result)
-            "getPendingNavigationMode" -> getPendingNavigationMode(call, result)
-            "isMetricUnits" -> isMetricUnits(call, result)
-            "setCurrentHole" -> setCurrentHole(call, result)
-            "set2DNavigationMode" -> set2DNavigationMode(call, result)
-            "set3DNavigationMode" -> set3DNavigationMode(call, result)
-            "setFlyoverNavigationMode" -> setFlyoverNavigationMode(call, result)
-            "setNextNavigationMode" -> setNextNavigationMode(call, result)
-            "setCartLocationVisible" -> setCartLocationVisible(call, result)
-            "setTeeBoxAsCurrentLocation" -> setTeeBoxAsCurrentLocation(call, result)
-            "setCurrentLocationGPS" -> setCurrentLocationGPS(call, result)
-            "setMeasurementSystem" -> setMeasurementSystem(call, result)
-            else -> result.notImplemented()
+        try {
+            when (call.method) {
+                "getCurrentHole" -> getCurrentHole(call, result)
+                "getNavigationMode" -> getNavigationMode(call, result)
+                "getNumHoles" -> getNumHoles(call, result)
+                "getPendingNavigationMode" -> getPendingNavigationMode(call, result)
+                "isMetricUnits" -> isMetricUnits(call, result)
+                "setCurrentHole" -> setCurrentHole(call, result)
+                "set2DNavigationMode" -> set2DNavigationMode(call, result)
+                "set3DNavigationMode" -> set3DNavigationMode(call, result)
+                "setFlyoverNavigationMode" -> setFlyoverNavigationMode(call, result)
+                "setNextNavigationMode" -> setNextNavigationMode(call, result)
+                "setCartLocationVisible" -> setCartLocationVisible(call, result)
+                "setTeeBoxAsCurrentLocation" -> setTeeBoxAsCurrentLocation(call, result)
+                "setCurrentLocationGPS" -> setCurrentLocationGPS(call, result)
+                "setMeasurementSystem" -> setMeasurementSystem(call, result)
+                else -> result.notImplemented()
+            }
+        } catch (e: RuntimeException) {
+            result.error("onMethodCall Exception","method:${call.method}, arguments:${call.arguments}, error:$e", null)
         }
     }
 
@@ -192,7 +195,7 @@ internal class FlutterIgolfViewer(
             false,
             initialTeeBox,
         )
-        result.success("Set current hole to $hole")
+        result.success("Set current hole to $hole with NavigationMode $navigationMode")
     }
 
     private fun setNavigationMode(call: MethodCall, result: MethodChannel.Result) {
