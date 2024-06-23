@@ -137,10 +137,7 @@ internal class FlutterIgolfViewer(
                 "getPendingNavigationMode" -> getPendingNavigationMode(call, result)
                 "isMetricUnits" -> isMetricUnits(call, result)
                 "setCurrentHole" -> setCurrentHole(call, result)
-                "set2DNavigationMode" -> set2DNavigationMode(call, result)
-                "set3DNavigationMode" -> set3DNavigationMode(call, result)
-                "setFlyoverNavigationMode" -> setFlyoverNavigationMode(call, result)
-                "setNextNavigationMode" -> setNextNavigationMode(call, result)
+                "setNavigationMode" -> setNavigationMode(call, result)
                 "setCartLocationVisible" -> setCartLocationVisible(call, result)
                 "setTeeBoxAsCurrentLocation" -> setTeeBoxAsCurrentLocation(call, result)
                 "setCurrentLocationGPS" -> setCurrentLocationGPS(call, result)
@@ -200,28 +197,20 @@ internal class FlutterIgolfViewer(
 
     private fun setNavigationMode(call: MethodCall, result: MethodChannel.Result) {
         val mode = call.argument<String>("mode")
+        val typedMode = when (mode) {
+            "freeCam" -> Course3DRendererBase.NavigationMode.FreeCam
+            "freeCamCart" -> Course3DRendererBase.NavigationMode.FreeCamCart
+            "flyover" -> Course3DRendererBase.NavigationMode.Flyover
+            "flyoverPause" -> Course3DRendererBase.NavigationMode.FlyoverPause
+            "greenView" -> Course3DRendererBase.NavigationMode.GreenView
+            "overallHole3" -> Course3DRendererBase.NavigationMode.OverallHole3
+            "navigationMode2D" -> Course3DRendererBase.NavigationMode.NavigationMode2D
+            else -> {
+                Course3DRendererBase.NavigationMode.NavigationMode2D
+            }
+        }
+        course3DViewer.viewer.setNavigationMode(typedMode)
         result.success("Result from native side for $mode")
-    }
-
-    private fun set2DNavigationMode(call: MethodCall, result: MethodChannel.Result) {
-        course3DViewer.viewer.setNavigationMode(Course3DRendererBase.NavigationMode.NavigationMode2D)
-        result.success(null)
-    }
-
-    private fun set3DNavigationMode(call: MethodCall, result: MethodChannel.Result) {
-        course3DViewer.viewer.setNavigationMode(Course3DRendererBase.NavigationMode.OverallHole3)
-        result.success(null)
-    }
-
-    private fun setFlyoverNavigationMode(call: MethodCall, result: MethodChannel.Result) {
-        course3DViewer.viewer.setNavigationMode(Course3DRendererBase.NavigationMode.Flyover)
-        result.success(null)
-    }
-
-    private fun setNextNavigationMode(call: MethodCall, result: MethodChannel.Result) {
-        val nextMode = course3DViewer.viewer.getPendingNavigationMode()
-        course3DViewer.viewer.setNavigationMode(nextMode)
-        result.success(null)
     }
 
     private fun setCartLocationVisible(call: MethodCall, result: MethodChannel.Result) {
