@@ -122,7 +122,7 @@ internal class FlutterIgolfViewer(
         )
         course3DViewer.viewer.setCurrentHole(
             1,
-            Course3DRendererBase.NavigationMode.OverallHole3,
+            Course3DRendererBase.NavigationMode.FollowGolfer,
             false,
             0
         )
@@ -182,8 +182,8 @@ internal class FlutterIgolfViewer(
         val initialTeeBox = call.argument<Int>("initialTeeBox") ?: null
 
         var mode = Course3DRendererBase.NavigationMode.NavigationMode2D
-        if (navigationMode == "overallHole3") {
-            mode = Course3DRendererBase.NavigationMode.OverallHole3
+        if (navigationMode == "overallHole") {
+            mode = Course3DRendererBase.NavigationMode.OverallHole
         }
 
         course3DViewer.viewer.setCurrentHole(
@@ -198,12 +198,14 @@ internal class FlutterIgolfViewer(
     private fun setNavigationMode(call: MethodCall, result: MethodChannel.Result) {
         val mode = call.argument<String>("mode")
         val typedMode = when (mode) {
-            "freeCam" -> Course3DRendererBase.NavigationMode.FreeCam
-            "freeCamCart" -> Course3DRendererBase.NavigationMode.FreeCamCart
             "flyover" -> Course3DRendererBase.NavigationMode.Flyover
             "flyoverPause" -> Course3DRendererBase.NavigationMode.FlyoverPause
-            "greenView" -> Course3DRendererBase.NavigationMode.GreenView
-            "overallHole3" -> Course3DRendererBase.NavigationMode.OverallHole3
+            "followGolfer" -> Course3DRendererBase.NavigationMode.FollowGolfer
+            "freeCam" -> Course3DRendererBase.NavigationMode.FreeCam
+            "freeCamCart" -> Course3DRendererBase.NavigationMode.FreeCamCart
+            "greenView2D" -> Course3DRendererBase.NavigationMode.GreenView2D
+            "greenView3D" -> Course3DRendererBase.NavigationMode.GreenView3D
+            "overallHole" -> Course3DRendererBase.NavigationMode.OverallHole
             "navigationMode2D" -> Course3DRendererBase.NavigationMode.NavigationMode2D
             else -> {
                 Course3DRendererBase.NavigationMode.NavigationMode2D
