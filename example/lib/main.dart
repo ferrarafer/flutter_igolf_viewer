@@ -21,7 +21,6 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   final _channel = MethodChannelFlutterIgolfCourseDetailsApi();
-  String _numberOfCourses = '';
 
   @override
   void initState() {
@@ -41,6 +40,7 @@ class _MyAppState extends State<MyApp> {
       );
 
       data = await _channel.getTypedCourseList(zipcode: '92108') ?? '';
+      print(data);
     } on PlatformException catch (e) {
       data = 'PlatformException ${e.code}. ${e.message}';
     }
@@ -50,29 +50,17 @@ class _MyAppState extends State<MyApp> {
     // setState to update our non-existent appearance.
     if (!mounted) return;
 
-    setState(() {
-      _numberOfCourses = data;
-    });
+    setState(() {});
   }
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return const MaterialApp(
       home: Scaffold(
-        appBar: AppBar(title: const Text('Plugin example app')),
-        body: Center(
-          child: Column(
-            children: [
-              Text('Golf courses retrieved: $_numberOfCourses'),
-              const Expanded(
-                child: FlutterIgolfViewer(
-                  apiKey: _igolfApiKey,
-                  secretKey: _igolfSecretKey,
-                  courseId: "x61wljOp5MS7",
-                ),
-              ),
-            ],
-          ),
+        body: FlutterIgolfViewer(
+          apiKey: _igolfApiKey,
+          secretKey: _igolfSecretKey,
+          courseId: "Rr049ibjL111",
         ),
       ),
     );
