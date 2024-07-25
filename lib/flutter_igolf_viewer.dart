@@ -5,12 +5,18 @@ class FlutterIgolfViewer extends StatelessWidget {
   final String apiKey;
   final String secretKey;
   final String courseId;
+  final String? parData;
+  final String? gpsDetails;
+  final String? vectorGpsObject;
   final bool isMetricUnits;
   const FlutterIgolfViewer({
     super.key,
     required this.apiKey,
     required this.secretKey,
     required this.courseId,
+    this.parData,
+    this.gpsDetails,
+    this.vectorGpsObject,
     this.isMetricUnits = true,
   });
 
@@ -24,6 +30,9 @@ class FlutterIgolfViewer extends StatelessWidget {
       "apiKey": apiKey,
       "secretKey": secretKey,
       "courseId": courseId,
+      "parData": parData,
+      "gpsDetails": gpsDetails,
+      "vectorGpsObject": vectorGpsObject,
       "isMetricUnits": isMetricUnits,
     };
 

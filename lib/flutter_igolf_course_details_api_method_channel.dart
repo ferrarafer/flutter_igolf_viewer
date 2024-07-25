@@ -66,8 +66,8 @@ class MethodChannelFlutterIgolfCourseDetailsApi
     );
   }
 
-  /// Request returns par and handicap information for an array of up to 20
-  /// courses submitted.
+  /// Returns par and handicap information for an array of up to 20 courses
+  /// submitted.
   @override
   Future<String?> getCourseScorecardList({
     required List<String> coursesIds,
@@ -139,7 +139,7 @@ class MethodChannelFlutterIgolfCourseDetailsApi
     });
   }
 
-  /// /// Returns a list of courses (with a maximum of 100 results per page,
+  /// Returns a list of courses (with a maximum of 100 results per page,
   /// maximum of 5 pages).
   @override
   Future<String?> getTypedCourseList({
@@ -174,6 +174,31 @@ class MethodChannelFlutterIgolfCourseDetailsApi
         'page': page,
         'resultsPerPage': resultsPerPage,
       },
+    );
+  }
+
+  /// Returns latitude, longitude points for Simple GPS data. This includes
+  /// points for the front, center, back of each green, up to five teebox
+  /// points, and up to four custom points (hazards) per hole.
+  @override
+  Future<String?> getCourseGPSDetails({
+    required String courseId
+  }) async {
+    return await methodChannel.invokeMethod<String>(
+      'getCourseGPSDetails', { 'id_course': courseId }
+    );
+  }
+
+  /// Returns geocoded data for course layout, including points, polygons and
+  /// lines for the elements on a course. Can be rendered using a custom
+  /// viewer, or the Android and iOS course libraries provided to iGolf
+  /// Connect partners.
+  @override
+  Future<String?> getCourseGPSVectorDetails({
+    required String courseId
+  }) async {
+    return await methodChannel.invokeMethod<String>(
+      'getCourseGPSVectorDetails', { 'id_course': courseId }
     );
   }
 }

@@ -107,4 +107,20 @@ abstract class FlutterIgolfCourseDetailsApiPlatform extends PlatformInterface {
   }) {
     throw UnimplementedError('getTypedCourseList() has not been implemented.');
   }
+
+  Future<String?> getCourseGPSDetails({
+    required String courseId,
+  }) {
+    throw UnimplementedError(
+      'getCourseGPSDetails() has not been implemented.',
+    );
+  }
+
+  Future<String?> getCourseGPSVectorDetails({
+      required String courseId,
+    }) {
+      throw UnimplementedError(
+        'getCourseGPSVectorDetails() has not been implemented.',
+      );
+  }
 }

@@ -7,6 +7,9 @@ import android.view.View
 import android.widget.TextView
 import com.filledstacks.plugins.flutter_igolf_viewer.channels.CourseViewerEventChannel
 import com.filledstacks.plugins.flutter_igolf_viewer.network.Network
+import com.google.gson.Gson
+import com.google.gson.GsonBuilder
+import com.google.gson.reflect.TypeToken
 import com.l1inc.viewer.Course3DRenderer
 import com.l1inc.viewer.Course3DRendererBase
 import com.l1inc.viewer.Course3DViewer
@@ -15,6 +18,7 @@ import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.EventChannel
 import io.flutter.plugin.platform.PlatformView
+import java.io.File
 import java.lang.RuntimeException
 
 internal class FlutterIgolfViewer(
@@ -42,8 +46,20 @@ internal class FlutterIgolfViewer(
 
         course3DViewer = Course3DViewer(context)
 
+        course3DViewer.viewer.setOnGPSDistancesUpdatedListener { front, center, back, cursorInsideGreen ->
+            eventChannel.sendEvent(mapOf(
+                "event" to "GPS_DISTANCES_UPDATED",
+                "front" to front,
+                "center" to center,
+                "back" to back,
+                "cursorInsideGreen" to cursorInsideGreen
+                ))
+        }
+
         course3DViewer.viewer.setCurrentCourseChangedListener {
-            eventChannel.sendEvent("CURRENT_COURSE_CHANGED")
+            eventChannel.sendEvent(mapOf(
+                "event" to "CURRENT_COURSE_CHANGED"
+            ))
         }
 
 //        course3DViewer.viewer.setCurrentHoleChangedListener {
@@ -51,11 +67,15 @@ internal class FlutterIgolfViewer(
 //        }
 
         course3DViewer.viewer.setFlyoverFinishListener {
-            eventChannel.sendEvent("FLYOVER_FINISHED")
+            eventChannel.sendEvent(mapOf(
+                "event" to "FLYOVER_FINISHED"
+            ))
         }
 
         course3DViewer.viewer.setGreenPositionChangeListener { greenPosition ->
-            eventChannel.sendEvent("GREEN_POSITION_CHANGED")
+            eventChannel.sendEvent(mapOf(
+                "event" to "GREEN_POSITION_CHANGED"
+            ))
         }
 
 //        course3DViewer.viewer.setHoleLoadingStateChangedListener {
@@ -63,13 +83,18 @@ internal class FlutterIgolfViewer(
 //        }
 
         course3DViewer.viewer.setNavigationModeChangedListener {
-            eventChannel.sendEvent("NAVIGATION_MODE_CHANGED")
+            eventChannel.sendEvent(mapOf(
+                "event" to "NAVIGATION_MODE_CHANGED"
+            ))
         }
 
         loadCourseData(
             creationParams.get("apiKey"),
             creationParams.get("secretKey"),
             creationParams.get("courseId"),
+            creationParams.get("parData"),
+            creationParams.get("gpsDetails"),
+            creationParams.get("vectorGpsObject"),
             creationParams.get("isMetricUnits")
         )
     }
@@ -83,7 +108,15 @@ internal class FlutterIgolfViewer(
         methodChannel.setMethodCallHandler(null)
     }
 
-    private fun loadCourseData(apiKey: Any?, secretKey: Any?, courseId: Any?, isMetricUnits: Any?) {
+    private fun loadCourseData(
+        apiKey: Any?,
+        secretKey: Any?,
+        courseId: Any?,
+        parData: Any?,
+        gpsDetails: Any?,
+        vectorGpsObject: Any?,
+        isMetricUnits: Any?
+    ) {
         if (apiKey !is String || apiKey.isBlank()) {
             throw RuntimeException("API key is required")
         }
@@ -100,9 +133,24 @@ internal class FlutterIgolfViewer(
             throw RuntimeException("isMetricUnits should be Boolean")
         }
 
+        if (parData != null && gpsDetails != null && vectorGpsObject != null) {
+            val vectorGpsMap = HashMap<String?, String?>()
+            vectorGpsMap[courseId] = vectorGpsObject as String
+            vectorGpsMap["GPS_DETAILS"] = gpsDetails as String
+            vectorGpsMap["COURSE_ID"] = courseId
+
+            initAndShowViewer(convertParData(parData as String), vectorGpsMap, isMetricUnits)
+            return
+        }
+
         Network().loadCourseData(apiKey, secretKey, courseId) { parDataMap, vectorDataJsonMap ->
             initAndShowViewer(parDataMap, vectorDataJsonMap, isMetricUnits)
-            event.sendEvent(vectorDataJsonMap)
+            event.sendEvent(buildMap {
+                put("event", "COURSE_DATA_LOADED")
+                put("courseId", courseId)
+                put("parDataMap", Gson().toJson(parDataMap).toString())
+                put("vectorDataJsonMap", vectorDataJsonMap)
+            })
         }
     }
 
@@ -237,5 +285,20 @@ internal class FlutterIgolfViewer(
             updateCameraPos,
         );
         result.success(response)
+    }
+
+    private fun convertParData(jsonString: String): Map<String?, Array<Int>?> {
+        val gson = GsonBuilder()
+            .registerTypeAdapter(object : TypeToken<Map<String?, Array<Int>?>>() {}.type, MapDeserializer())
+            .create()
+        val type = object : TypeToken<Map<String?, Array<Int>?>>() {}.type
+        return gson.fromJson(jsonString, type)
+    }
+
+    private fun writeStringToFile(context: Context, content: String, filename: String) {
+        // Create a file in internal storage
+        val file = File(context.filesDir, filename)
+        // Write content to the file
+        file.writeText(content)
     }
 }
