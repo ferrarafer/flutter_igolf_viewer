@@ -248,7 +248,7 @@ class Network {
         })
     }
 
-    private fun loadVectorDetails(
+    fun loadVectorDetails(
         apiKey: String,
         secretKey: String,
         courseId: String,
@@ -269,7 +269,7 @@ class Network {
         })
     }
 
-    private fun loadGPSdetails(
+    fun loadGPSdetails(
         apiKey: String,
         secretKey: String,
         courseId: String,

@@ -44,6 +44,12 @@ class CourseDetailsApiMethodChannel(binaryMessenger: BinaryMessenger) : MethodCa
             "getCourseScorecardList" -> onGetCourseScorecardList(call, result)
             "getStateList" -> onGetStateList(call, result)
             "getTypedCourseList" -> onGetTypedCourseList(call, result)
+            /// Course GPS API
+            "getCourseGPSDetails" -> onGetCourseGPSDetails(call, result)
+            "getCourseGPSVectorDetails" -> onGetCourseGPSVectorDetails(call, result)
+//            "getCourseElevationDataDetails" -> onGetCourseElevationDataDetails(call, result)
+//            "getCourseElevationDataOneMeterDetails" -> onGetCourseElevationDataOneMeterDetails(call, result)
+//            "getCourseElevationDataThreeMeterDetails" -> onGetCourseElevationDataThreeMeterDetails(call, result)
             else -> result.notImplemented()
         }
 
@@ -156,6 +162,30 @@ class CourseDetailsApiMethodChannel(binaryMessenger: BinaryMessenger) : MethodCa
         }
         Network().getStateList(apiKey, secretKey, countryId) { stateList ->
             result.success(stateList)
+        }
+    }
+
+    private fun onGetCourseGPSDetails(call: MethodCall, result: MethodChannel.Result ) {
+        val courseId = call.argument("id_course") ?: ""
+        if (courseId.length == 0) {
+            result.error("INVALIDARGS", "You must provide valid course ID", null)
+            return
+        }
+
+        Network().loadGPSdetails(apiKey, secretKey, courseId) { courseGpsDetails ->
+            result.success(courseGpsDetails)
+        }
+    }
+
+    private fun onGetCourseGPSVectorDetails(call: MethodCall, result: MethodChannel.Result ) {
+        val courseId = call.argument("id_course") ?: ""
+        if (courseId.length == 0) {
+            result.error("INVALIDARGS", "You must provide valid course ID", null)
+            return
+        }
+
+        Network().loadVectorDetails(apiKey, secretKey, courseId) { courseGpsVectorDetails ->
+            result.success(courseGpsVectorDetails)
         }
     }
 
