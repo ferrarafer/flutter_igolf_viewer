@@ -75,7 +75,15 @@ class Network {
             courseListRequest
         ).enqueue(object : Callback<ResponseBody> {
             override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
-
+//                result.error("COURSE_LIST_ERROR"0, t.message, null)
+                onLoaded.invoke(Gson().toJson(mapOf(
+                    "page" to 1,
+                    "totalPages" to 1,
+                    "totalCourses" to 0,
+                    "courseList" to null,
+                    "Status" to -1,
+                    "ErrorMessage" to "${t.message}"
+                )))
             }
 
             override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
