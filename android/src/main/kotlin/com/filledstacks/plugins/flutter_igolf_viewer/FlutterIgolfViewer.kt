@@ -12,7 +12,11 @@ import com.google.gson.GsonBuilder
 import com.google.gson.reflect.TypeToken
 import com.l1inc.viewer.Course3DRenderer
 import com.l1inc.viewer.Course3DRendererBase
+import com.l1inc.viewer.Course3DRendererBase.NavigationMode
 import com.l1inc.viewer.Course3DViewer
+import com.l1inc.viewer.HoleWithinCourse
+import com.l1inc.viewer.common.Viewer.CurrentHoleChangedListener
+import com.l1inc.viewer.common.Viewer.HoleLoadingStateChangedListener
 import io.flutter.plugin.common.BinaryMessenger
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
@@ -62,9 +66,17 @@ internal class FlutterIgolfViewer(
             ))
         }
 
-//        course3DViewer.viewer.setCurrentHoleChangedListener {
-//            eventChannel.sendEvent("CURRENT_HOLE_CHANGED")
-//        }
+        course3DViewer.viewer.setCurrentHoleChangedListener (object : CurrentHoleChangedListener {
+            override fun onHoleChanged(hole: HoleWithinCourse?) {
+                hole ?: return
+                eventChannel.sendEvent(mapOf(
+                    "event" to "CURRENT_HOLE_CHANGED",
+                    "hole" to hole.holeNumber
+                ))
+            }
+
+            override fun onHoleFailed() {}
+        })
 
         course3DViewer.viewer.setFlyoverFinishListener {
             eventChannel.sendEvent(mapOf(
@@ -74,19 +86,33 @@ internal class FlutterIgolfViewer(
 
         course3DViewer.viewer.setGreenPositionChangeListener { greenPosition ->
             eventChannel.sendEvent(mapOf(
-                "event" to "GREEN_POSITION_CHANGED"
+                "event" to "GREEN_POSITION_CHANGED",
+                "position" to "$greenPosition"
             ))
         }
 
-//        course3DViewer.viewer.setHoleLoadingStateChangedListener {
-//            eventChannel.sendEvent("HOLE_LOADING_STATE_CHANGED")
-//        }
+        course3DViewer.viewer.setHoleLoadingStateChangedListener (object : HoleLoadingStateChangedListener {
+            override fun onStartLoading() {
+                eventChannel.sendEvent(mapOf(
+                    "event" to "HOLE_LOADING_STARTED"
+                ))
+            }
 
-        course3DViewer.viewer.setNavigationModeChangedListener {
+            override fun onFinishLoading() {
+                eventChannel.sendEvent(mapOf(
+                    "event" to "HOLE_LOADING_FINISHED"
+                ))
+            }
+        })
+
+        course3DViewer.viewer.setNavigationModeChangedListener { mode ->
             eventChannel.sendEvent(mapOf(
-                "event" to "NAVIGATION_MODE_CHANGED"
+                "event" to "NAVIGATION_MODE_CHANGED",
+                "mode" to "$mode"
             ))
         }
+
+        course3DViewer.viewer.isHoleRotationOnDynamicFrontBackEnabled = true
 
         loadCourseData(
             creationParams.get("apiKey"),
@@ -168,9 +194,10 @@ internal class FlutterIgolfViewer(
             true,
             null
         )
+
         course3DViewer.viewer.setCurrentHole(
             1,
-            Course3DRendererBase.NavigationMode.FollowGolfer,
+            NavigationMode.Flyover,
             false,
             0
         )
@@ -229,14 +256,9 @@ internal class FlutterIgolfViewer(
         val navigationMode = call.argument<String>("navigationMode") ?: ""
         val initialTeeBox = call.argument<Int>("initialTeeBox") ?: null
 
-        var mode = Course3DRendererBase.NavigationMode.NavigationMode2D
-        if (navigationMode == "overallHole") {
-            mode = Course3DRendererBase.NavigationMode.OverallHole
-        }
-
         course3DViewer.viewer.setCurrentHole(
             hole,
-            mode,
+            getTypedNavigationMode(navigationMode),
             false,
             initialTeeBox,
         )
@@ -245,20 +267,7 @@ internal class FlutterIgolfViewer(
 
     private fun setNavigationMode(call: MethodCall, result: MethodChannel.Result) {
         val mode = call.argument<String>("mode")
-        val typedMode = when (mode) {
-            "flyover" -> Course3DRendererBase.NavigationMode.Flyover
-            "flyoverPause" -> Course3DRendererBase.NavigationMode.FlyoverPause
-            "followGolfer" -> Course3DRendererBase.NavigationMode.FollowGolfer
-            "freeCam" -> Course3DRendererBase.NavigationMode.FreeCam
-            "freeCamCart" -> Course3DRendererBase.NavigationMode.FreeCamCart
-            "greenView2D" -> Course3DRendererBase.NavigationMode.GreenView2D
-            "greenView3D" -> Course3DRendererBase.NavigationMode.GreenView3D
-            "overallHole" -> Course3DRendererBase.NavigationMode.OverallHole
-            "navigationMode2D" -> Course3DRendererBase.NavigationMode.NavigationMode2D
-            else -> {
-                Course3DRendererBase.NavigationMode.NavigationMode2D
-            }
-        }
+        val typedMode = getTypedNavigationMode(mode)
         course3DViewer.viewer.setNavigationMode(typedMode)
         result.success("Result from native side for $mode")
     }
@@ -285,6 +294,25 @@ internal class FlutterIgolfViewer(
             updateCameraPos,
         );
         result.success(response)
+    }
+
+    private fun getTypedNavigationMode(mode: String?): NavigationMode {
+        val typedMode = when (mode) {
+            "flyover" -> NavigationMode.Flyover
+            "flyoverPause" -> NavigationMode.FlyoverPause
+            "followGolfer" -> NavigationMode.FollowGolfer
+            "freeCam" -> NavigationMode.FreeCam
+            "freeCamCart" -> NavigationMode.FreeCamCart
+            "greenView2D" -> NavigationMode.GreenView2D
+            "greenView3D" -> NavigationMode.GreenView3D
+            "overallHole" -> NavigationMode.OverallHole
+            "navigationMode2D" -> NavigationMode.NavigationMode2D
+            else -> {
+                Course3DRendererBase.NavigationMode.NavigationMode2D
+            }
+        }
+
+        return typedMode
     }
 
     private fun convertParData(jsonString: String): Map<String?, Array<Int>?> {
