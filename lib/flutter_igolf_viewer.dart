@@ -8,6 +8,7 @@ class FlutterIgolfViewer extends StatelessWidget {
   final String? parData;
   final String? gpsDetails;
   final String? vectorGpsObject;
+  final int golferIconIndex;
   final bool isMetricUnits;
   const FlutterIgolfViewer({
     super.key,
@@ -17,6 +18,7 @@ class FlutterIgolfViewer extends StatelessWidget {
     this.parData,
     this.gpsDetails,
     this.vectorGpsObject,
+    this.golferIconIndex = 6,
     this.isMetricUnits = true,
   });
 
@@ -33,6 +35,7 @@ class FlutterIgolfViewer extends StatelessWidget {
       "parData": parData,
       "gpsDetails": gpsDetails,
       "vectorGpsObject": vectorGpsObject,
+      "golferIconIndex": golferIconIndex,
       "isMetricUnits": isMetricUnits,
     };
 

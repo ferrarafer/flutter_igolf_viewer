@@ -121,6 +121,7 @@ internal class FlutterIgolfViewer(
             creationParams.get("parData"),
             creationParams.get("gpsDetails"),
             creationParams.get("vectorGpsObject"),
+            creationParams.get("golferIconIndex"),
             creationParams.get("isMetricUnits")
         )
     }
@@ -141,6 +142,7 @@ internal class FlutterIgolfViewer(
         parData: Any?,
         gpsDetails: Any?,
         vectorGpsObject: Any?,
+        golferIconIndex: Any?,
         isMetricUnits: Any?
     ) {
         if (apiKey !is String || apiKey.isBlank()) {
@@ -155,6 +157,10 @@ internal class FlutterIgolfViewer(
             throw RuntimeException("Course ID is required")
         }
 
+        if (golferIconIndex !is Int) {
+            throw RuntimeException("golferIconIndex should be Integer")
+        }
+
         if (isMetricUnits !is Boolean) {
             throw RuntimeException("isMetricUnits should be Boolean")
         }
@@ -165,12 +171,12 @@ internal class FlutterIgolfViewer(
             vectorGpsMap["GPS_DETAILS"] = gpsDetails as String
             vectorGpsMap["COURSE_ID"] = courseId
 
-            initAndShowViewer(convertParData(parData as String), vectorGpsMap, isMetricUnits)
+            initAndShowViewer(convertParData(parData as String), vectorGpsMap, golferIconIndex, isMetricUnits)
             return
         }
 
         Network().loadCourseData(apiKey, secretKey, courseId) { parDataMap, vectorDataJsonMap ->
-            initAndShowViewer(parDataMap, vectorDataJsonMap, isMetricUnits)
+            initAndShowViewer(parDataMap, vectorDataJsonMap, golferIconIndex, isMetricUnits)
             event.sendEvent(buildMap {
                 put("event", "COURSE_DATA_LOADED")
                 put("courseId", courseId)
@@ -183,15 +189,17 @@ internal class FlutterIgolfViewer(
     private fun initAndShowViewer(
         parDataMap: Map<String?, Array<Int>?>,
         vectorDataJsonMap: HashMap<String?, String?>,
+        golferIconIndex: Int,
         isMetricUnits: Boolean
     ) {
         course3DViewer.viewer.init(
             vectorDataJsonMap,
             false,
+            golferIconIndex,
             isMetricUnits,
             parDataMap,
             null,
-            true,
+            false,
             null
         )
 
