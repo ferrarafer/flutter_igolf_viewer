@@ -40,7 +40,7 @@ class _MyAppState extends State<MyApp> {
       );
 
       data = await _channel.getTypedCourseList(zipcode: '92108') ?? '';
-      print(data);
+      debugPrint(data);
     } on PlatformException catch (e) {
       data = 'PlatformException ${e.code}. ${e.message}';
     }
