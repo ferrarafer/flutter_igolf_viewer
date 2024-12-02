@@ -1,3 +1,7 @@
+## 0.5.1
+
+* change: modify logging level to HEADERS
+
 ## 0.5.0
 
 * change: update viewer library
