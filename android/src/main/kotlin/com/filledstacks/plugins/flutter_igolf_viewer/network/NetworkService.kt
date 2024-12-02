@@ -16,7 +16,7 @@ object NetworkService {
     private val TIMEOUT = 40
 
     private val logging =
-        HttpLoggingInterceptor().setLevel(HttpLoggingInterceptor.Level.BODY)
+        HttpLoggingInterceptor().setLevel(HttpLoggingInterceptor.Level.HEADERS)
 
     private fun provideRetrofit(): Retrofit {
         return Retrofit.Builder()
