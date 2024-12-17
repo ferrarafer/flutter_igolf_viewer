@@ -24,7 +24,8 @@ if (flutterVersionName == null) {
 
 android {
     namespace "com.filledstacks.plugins.flutter_igolf_viewer_example"
-    compileSdkVersion flutter.compileSdkVersion
+    //compileSdkVersion flutter.compileSdkVersion
+    compileSdk 34
     ndkVersion flutter.ndkVersion
 
     compileOptions {
