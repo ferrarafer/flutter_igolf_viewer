@@ -102,10 +102,15 @@ class CourseDetailsApiMethodChannel(binaryMessenger: BinaryMessenger) : MethodCa
         val courseListRequest = CourseListRequest(
             active = active,
             city = call.argument("city"),
+            countryId = call.argument("id_country"),
+            countryFormat = call.argument("countryFormat"),
             courseName = call.argument("courseName"),
+            page = call.argument("page"),
             radius = call.argument("radius"),
             referenceLatitude = call.argument("referenceLatitude"),
             referenceLongitude = call.argument("referenceLongitude"),
+            resultsPerPage = call.argument("resultsPerPage"),
+            stateId = call.argument("id_state"),
             zipcode = call.argument("zipcode")
         )
 
