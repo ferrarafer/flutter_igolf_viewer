@@ -5,7 +5,6 @@ import android.os.Looper
 import io.flutter.plugin.common.BinaryMessenger
 import io.flutter.plugin.common.EventChannel
 import io.flutter.plugin.common.EventChannel.StreamHandler
-import io.flutter.plugin.common.PluginRegistry.Registrar
 
 class CourseViewerEventChannel(binaryMessenger: BinaryMessenger) : StreamHandler {
     private val channel: EventChannel = EventChannel(
