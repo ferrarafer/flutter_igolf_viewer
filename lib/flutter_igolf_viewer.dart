@@ -5,6 +5,8 @@ class FlutterIgolfViewer extends StatelessWidget {
   final String apiKey;
   final String secretKey;
   final String courseId;
+  final int startingHole;
+  final int initialTeeBox;
   final String? parData;
   final String? gpsDetails;
   final String? vectorGpsObject;
@@ -15,6 +17,8 @@ class FlutterIgolfViewer extends StatelessWidget {
     required this.apiKey,
     required this.secretKey,
     required this.courseId,
+    this.startingHole = 1,
+    this.initialTeeBox = 0,
     this.parData,
     this.gpsDetails,
     this.vectorGpsObject,
@@ -32,6 +36,8 @@ class FlutterIgolfViewer extends StatelessWidget {
       "apiKey": apiKey,
       "secretKey": secretKey,
       "courseId": courseId,
+      "startingHole": startingHole,
+      "initialTeeBox": initialTeeBox,
       "parData": parData,
       "gpsDetails": gpsDetails,
       "vectorGpsObject": vectorGpsObject,

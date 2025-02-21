@@ -118,6 +118,8 @@ internal class FlutterIgolfViewer(
             creationParams.get("apiKey"),
             creationParams.get("secretKey"),
             creationParams.get("courseId"),
+            creationParams.get("startingHole"),
+            creationParams.get("initialTeeBox"),
             creationParams.get("parData"),
             creationParams.get("gpsDetails"),
             creationParams.get("vectorGpsObject"),
@@ -139,6 +141,8 @@ internal class FlutterIgolfViewer(
         apiKey: Any?,
         secretKey: Any?,
         courseId: Any?,
+        startingHole: Any?,
+        initialTeeBox: Any?,
         parData: Any?,
         gpsDetails: Any?,
         vectorGpsObject: Any?,
@@ -157,6 +161,14 @@ internal class FlutterIgolfViewer(
             throw RuntimeException("Course ID is required")
         }
 
+        if (startingHole !is Int) {
+            throw RuntimeException("startingHole should be Integer")
+        }
+
+        if (initialTeeBox !is Int) {
+            throw RuntimeException("initialTeeBox should be Integer")
+        }
+
         if (golferIconIndex !is Int) {
             throw RuntimeException("golferIconIndex should be Integer")
         }
@@ -171,12 +183,19 @@ internal class FlutterIgolfViewer(
             vectorGpsMap["GPS_DETAILS"] = gpsDetails as String
             vectorGpsMap["COURSE_ID"] = courseId
 
-            initAndShowViewer(convertParData(parData as String), vectorGpsMap, golferIconIndex, isMetricUnits)
+            initAndShowViewer(
+                convertParData(parData as String),
+                vectorGpsMap,
+                startingHole,
+                initialTeeBox,
+                golferIconIndex,
+                isMetricUnits
+            )
             return
         }
 
         Network().loadCourseData(apiKey, secretKey, courseId) { parDataMap, vectorDataJsonMap ->
-            initAndShowViewer(parDataMap, vectorDataJsonMap, golferIconIndex, isMetricUnits)
+            initAndShowViewer(parDataMap, vectorDataJsonMap, startingHole, initialTeeBox, golferIconIndex, isMetricUnits)
             event.sendEvent(buildMap {
                 put("event", "COURSE_DATA_LOADED")
                 put("courseId", courseId)
@@ -189,6 +208,8 @@ internal class FlutterIgolfViewer(
     private fun initAndShowViewer(
         parDataMap: Map<String?, Array<Int>?>,
         vectorDataJsonMap: HashMap<String?, String?>,
+        startingHole: Int,
+        initialTeeBox: Int,
         golferIconIndex: Int,
         isMetricUnits: Boolean
     ) {
@@ -204,10 +225,10 @@ internal class FlutterIgolfViewer(
         )
 
         course3DViewer.viewer.setCurrentHole(
-            1,
+            startingHole,
             NavigationMode.Flyover,
             false,
-            0
+            initialTeeBox
         )
     }
 
