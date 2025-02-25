@@ -226,8 +226,8 @@ internal class FlutterIgolfViewer(
 
         course3DViewer.viewer.setCurrentHole(
             startingHole,
-            NavigationMode.Flyover,
-            false,
+            NavigationMode.FreeCam,
+            true,
             initialTeeBox
         )
     }
