@@ -60,6 +60,14 @@ internal class FlutterIgolfViewer(
                 ))
         }
 
+        course3DViewer.viewer.setOnUserTapsViewerListener { targetToUser, targetToFlag ->
+            eventChannel.sendEvent(mapOf(
+                "event" to "USER_TAPS_VIEWER",
+                "targetToUser" to targetToUser,
+                "targetToFlag" to targetToFlag
+            ))
+        }
+
         course3DViewer.viewer.setCurrentCourseChangedListener {
             eventChannel.sendEvent(mapOf(
                 "event" to "CURRENT_COURSE_CHANGED"
