@@ -1,3 +1,8 @@
+
+## 0.6.0
+
+* Adds callback for user tap event
+
 ## 0.5.1
 
 * change: modify logging level to HEADERS
