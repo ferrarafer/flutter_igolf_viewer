@@ -1,4 +1,8 @@
 
+## 0.6.1
+
+*  change: removes the draw call for the target
+
 ## 0.6.0
 
 * Adds callback for user tap event
