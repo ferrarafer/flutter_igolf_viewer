@@ -1,3 +1,6 @@
+## 0.6.2
+
+* change: zoom out FreeCam to show the golfer above sheet
 
 ## 0.6.1
 
