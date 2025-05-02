@@ -1,3 +1,7 @@
+## 0.6.3
+
+* change: set autoAdvanceEnabled to false by default
+
 ## 0.6.2
 
 * change: zoom out FreeCam to show the golfer above sheet
