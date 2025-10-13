@@ -19,14 +19,15 @@ private final class CourseViewerEventStreamHandler: NSObject, FlutterStreamHandl
   }
 }
 
-public class FlutterIgolfViewerPlugin: NSObject, FlutterPlugin {
+@objcMembers
+public final class SwiftFlutterIgolfViewerPlugin: NSObject, FlutterPlugin {
   private var viewerChannel: FlutterMethodChannel?
   private var courseDetailsChannel: FlutterMethodChannel?
   private var eventChannel: FlutterEventChannel?
   private let eventStreamHandler = CourseViewerEventStreamHandler()
 
   public static func register(with registrar: FlutterPluginRegistrar) {
-    let instance = FlutterIgolfViewerPlugin()
+    let instance = SwiftFlutterIgolfViewerPlugin()
     instance.registerChannels(with: registrar)
   }
 
