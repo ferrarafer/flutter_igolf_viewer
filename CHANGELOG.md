@@ -1,3 +1,7 @@
+## 0.6.4
+
+* fix: prevent iOS `MissingPluginException` by registering placeholder method and event channels
+
 ## 0.6.3
 
 * change: set autoAdvanceEnabled to false by default
