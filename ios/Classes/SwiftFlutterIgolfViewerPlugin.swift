@@ -4,12 +4,12 @@ import UIKit
 private final class CourseViewerEventStreamHandler: NSObject, FlutterStreamHandler {
   private var eventSink: FlutterEventSink?
 
-  func onListen(with arguments: Any?, eventSink events: @escaping FlutterEventSink) -> FlutterError? {
+  func onListen(withArguments arguments: Any?, eventSink events: @escaping FlutterEventSink) -> FlutterError? {
     eventSink = events
     return nil
   }
 
-  func onCancel(with arguments: Any?) -> FlutterError? {
+  func onCancel(withArguments arguments: Any?) -> FlutterError? {
     eventSink = nil
     return nil
   }
