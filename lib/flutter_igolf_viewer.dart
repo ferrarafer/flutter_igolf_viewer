@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -45,11 +46,25 @@ class FlutterIgolfViewer extends StatelessWidget {
       "isMetricUnits": isMetricUnits,
     };
 
-    return AndroidView(
-      viewType: viewType,
-      layoutDirection: TextDirection.ltr,
-      creationParams: creationParams,
-      creationParamsCodec: const StandardMessageCodec(),
-    );
+    switch (defaultTargetPlatform) {
+      case TargetPlatform.android:
+        return AndroidView(
+          viewType: viewType,
+          layoutDirection: TextDirection.ltr,
+          creationParams: creationParams,
+          creationParamsCodec: const StandardMessageCodec(),
+        );
+      case TargetPlatform.iOS:
+        return UiKitView(
+          viewType: viewType,
+          layoutDirection: TextDirection.ltr,
+          creationParams: creationParams,
+          creationParamsCodec: const StandardMessageCodec(),
+        );
+      default:
+        throw UnsupportedError(
+          'Platform $defaultTargetPlatform is not yet supported by flutter_igolf_viewer.',
+        );
+    }
   }
 }
