@@ -1,7 +1,7 @@
 import Flutter
 import UIKit
 
-private final class CourseViewerEventStreamHandler: NSObject, FlutterStreamHandler {
+final class CourseViewerEventStreamHandler: NSObject, FlutterStreamHandler {
   private var eventSink: FlutterEventSink?
 
   func onListen(withArguments arguments: Any?, eventSink events: @escaping FlutterEventSink) -> FlutterError? {
@@ -56,6 +56,12 @@ public final class SwiftFlutterIgolfViewerPlugin: NSObject, FlutterPlugin {
     )
     eventChannel.setStreamHandler(eventStreamHandler)
     self.eventChannel = eventChannel
+
+    let viewFactory = FlutterIgolfViewerFactory(
+      messenger: registrar.messenger(),
+      eventStreamHandler: eventStreamHandler
+    )
+    registrar.register(viewFactory, withId: "flutter_igolf_viewer")
   }
 
   public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
