@@ -1,11 +1,11 @@
 name: flutter_igolf_viewer
 description: "A new Flutter plugin project."
-version: 0.6.4
+version: 0.6.5
 homepage:
 
 environment:
-  sdk: '>=3.2.3 <4.0.0'
-  flutter: '>=3.3.0'
+  sdk: ">=3.2.3 <4.0.0"
+  flutter: ">=3.3.0"
 
 dependencies:
   flutter:
