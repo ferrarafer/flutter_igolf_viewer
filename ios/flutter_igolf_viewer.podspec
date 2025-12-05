@@ -22,8 +22,10 @@ A new Flutter plugin project.
 
   # Texture resources
   s.resource_bundles = {
-    'flutter_igolf_viewer' => ['3DViewer/textures/**/*']
+    'flutter_igolf_viewer' => ['textures/**/*']
   }
+
+  s.resources = 'textures/**/*'
 
   # System framework dependencies for IGolfViewer3D
   s.frameworks = 'GLKit', 'CoreLocation'
