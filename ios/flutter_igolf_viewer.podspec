@@ -20,11 +20,6 @@ A new Flutter plugin project.
   # IGolfViewer3D framework
   s.vendored_frameworks = 'IGolfViewer3D.xcframework'
 
-  # Texture resources
-  s.resource_bundles = {
-    'flutter_igolf_viewer' => ['textures/**/*']
-  }
-
   s.resources = 'textures/**/*'
 
   # System framework dependencies for IGolfViewer3D

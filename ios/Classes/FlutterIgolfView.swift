@@ -3,8 +3,8 @@ import UIKit
 import IGolfViewer3D
 
 class FlutterIgolfView: NSObject, FlutterPlatformView {
-    var renderView: CourseRenderView
-    var loader: CourseRenderViewLoader?
+    private var _renderView: CourseRenderView
+    private var _loader: CourseRenderViewLoader?
 
     init(
         frame: CGRect,
@@ -12,7 +12,7 @@ class FlutterIgolfView: NSObject, FlutterPlatformView {
         arguments args: Any?,
         binaryMessenger messenger: FlutterBinaryMessenger?
     ) {
-        renderView = CourseRenderView(frame: frame)
+        _renderView = CourseRenderView(frame: frame)
         super.init()
 
         // Parse arguments and configure the viewer
@@ -22,7 +22,7 @@ class FlutterIgolfView: NSObject, FlutterPlatformView {
     }
 
     func view() -> UIView {
-        return renderView
+        return _renderView
     }
 
     private func configureViewer(with arguments: [String: Any]) {
@@ -63,7 +63,7 @@ class FlutterIgolfView: NSObject, FlutterPlatformView {
         loader.draw3DCentralLine = false
 
         // Store loader reference
-        loader = loader
+        _loader = loader
 
         // Create loading indicator
         let loadingView = UIActivityIndicatorView(style: .large)
@@ -76,7 +76,7 @@ class FlutterIgolfView: NSObject, FlutterPlatformView {
             completionHandler: { [weak self] in
                 guard let self = self else { return }
                 // Load the course data into the render view
-                self.renderView.load(with: loader)
+                self._renderView.load(with: loader)
             },
             errorHandler: { error in
                 if let error = error {
@@ -90,7 +90,7 @@ class FlutterIgolfView: NSObject, FlutterPlatformView {
 
     deinit {
         // Clean up resources
-        renderView.invalidate()
-        loader = nil
+        _renderView.invalidate()
+        _loader = nil
     }
 }
