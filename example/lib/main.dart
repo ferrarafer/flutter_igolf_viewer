@@ -1,12 +1,14 @@
-import 'package:flutter/material.dart';
 import 'dart:async';
 
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_igolf_viewer/flutter_igolf_course_details_api_method_channel.dart';
 import 'package:flutter_igolf_viewer/flutter_igolf_viewer.dart';
 
-const _igolfApiKey = String.fromEnvironment('IGOLF_API_KEY');
-const _igolfSecretKey = String.fromEnvironment('IGOLF_SECRET_KEY');
+const _igolfApiKey =
+    String.fromEnvironment('IGOLF_API_KEY', defaultValue: '');
+const _igolfSecretKey =
+    String.fromEnvironment('IGOLF_SECRET_KEY', defaultValue: '');
 
 void main() {
   runApp(const MyApp());
@@ -39,7 +41,7 @@ class _MyAppState extends State<MyApp> {
         secretKey: _igolfSecretKey,
       );
 
-      data = await _channel.getTypedCourseList(zipcode: '92108') ?? '';
+      data = await _channel.getCourseDetails(courseId: 'Rr049ibjL111') ?? '';
       debugPrint(data);
     } on PlatformException catch (e) {
       data = 'PlatformException ${e.code}. ${e.message}';
