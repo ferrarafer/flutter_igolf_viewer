@@ -2,8 +2,8 @@
 //  CourseDataLoader.h
 //  iGolfViewer3D
 //
-//  Created by Dmitry Klenov on 11/03/2019.
-//  Copyright © 2019 Yevhen Paschenko. All rights reserved.
+//  Copyright (c) 2024. iGolf, Inc. - All Rights Reserved.
+//  You may use this code under the terms of the license.
 //
 
 #import <UIKit/UIKit.h>
@@ -41,7 +41,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, assign) BOOL areFrontBackMarkersDynamic;
 @property (nonatomic, assign) BOOL autoAdvanceActive;
 @property (nonatomic, assign) BOOL rotateHoleOnLocationChanged;
-//@property (nonatomic, assign) BOOL cutLayersByHoleBackground;
+@property (nonatomic, assign) BOOL cutLayersByHoleBackground;
 @property (nonatomic, assign) BOOL draw3DCentralLine;
 @property (nonatomic, assign) NavigationMode initialNavigationMode;
 @property (nonatomic, assign) TextureQuality textureQuality;
@@ -53,10 +53,6 @@ NS_ASSUME_NONNULL_BEGIN
 -(id)initWithApplicationAPIKey:(NSString *)applicationAPIKey
           applicationSecretKey:(NSString *)applicationSecretKey
                       idCourse:(NSString *)idCourse;
-
--(id)initDevLoaderWithApplicationAPIKey:(NSString *)applicationAPIKey
-                   applicationSecretKey:(NSString *)applicationSecretKey
-                               idCourse:(NSString *)idCourse;
 
 -(id)initLoaderWithEndpont:(VEndpoint *)endpoint
                                idCourse:(NSString *)idCourse;

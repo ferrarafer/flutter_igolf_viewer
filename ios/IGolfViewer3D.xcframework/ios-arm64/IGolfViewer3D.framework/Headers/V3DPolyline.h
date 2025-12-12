@@ -2,8 +2,8 @@
 //  V3DPolyLine.h
 //  iGolfViewer3D
 //
-//  Created by Dmitry Klenov on 11/10/2018.
-//  Copyright © 2018 Yevhen Paschenko. All rights reserved.
+//  Copyright (c) 2024. iGolf, Inc. - All Rights Reserved.
+//  You may use this code under the terms of the license.
 //
 
 #import <Foundation/Foundation.h>

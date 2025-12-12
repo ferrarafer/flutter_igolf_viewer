@@ -1,3 +1,10 @@
+//
+//  CourseRenderView.h
+//  iGolfViewer3D
+//
+//  Copyright (c) 2024. iGolf, Inc. - All Rights Reserved.
+//  You may use this code under the terms of the license.
+//
 
 #import <UIKit/UIKit.h>
 #import <GLKit/GLKit.h>
@@ -13,7 +20,6 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@class IGolfPace;
 @class CourseRenderViewLoader;
 @class OpenGLESRenderView;
 
@@ -56,11 +62,10 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, assign)   NSUInteger currentHole;
 @property (nonatomic, readonly) NSUInteger numberOfHoles;
 @property (nonatomic, readonly) NSUInteger holeWithin;
-@property (nonatomic, readonly) NSTimeInterval roundTime;
 
 @property (nonatomic, retain) CLLocation* currentLocation;
 
-//@property (nonatomic, assign)   BOOL cutLayersByHoleBackground;
+@property (nonatomic, assign)   BOOL cutLayersByHoleBackground;
 @property (nonatomic, assign)   BOOL draw3DCentralLine;
 @property (nonatomic, assign)   BOOL drawDogLegMarker;
 @property (nonatomic, assign)   BOOL drawCentralPathMarkers;
@@ -82,7 +87,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, assign)   CalloutsDrawMode calloutsDrawMode;
 
 @property (nonatomic, assign)   double overallHoleViewAngle;
-//@property (nonatomic, assign)   float renderViewWidthPercent;
+@property (nonatomic, assign)   float renderViewWidthPercent;
 @property (nonatomic, assign)   double flyoverViewAngle;
 @property (nonatomic, assign)   double freeCamViewAngle;
 
@@ -94,8 +99,6 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)loadWithLoader:(CourseRenderViewLoader *)loader;
 - (void)setDrawingEnabled:(BOOL)isEnabled;
 - (void)dataSourceChanged;
-- (void)setPaceLibrary:(nullable IGolfPace *)paceLibrary;
-- (void)setUserFirstName:(nullable NSString*)firstName lastName:(nullable NSString*)lastName email:(nullable NSString*)email idUser:(nullable NSNumber*)idUser;
 - (void)setSimulatedLocation:(CLLocation *)simulatedLocation;
 - (void)invalidate;
 

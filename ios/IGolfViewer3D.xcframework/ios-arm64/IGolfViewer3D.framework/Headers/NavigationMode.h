@@ -2,8 +2,8 @@
 //  NavigationMode.h
 //  iGolfViewer3D
 //
-//  Created by Yevhen Paschenko on 4/12/17.
-//  Copyright © 2017 Yevhen Paschenko. All rights reserved.
+//  Copyright (c) 2024. iGolf, Inc. - All Rights Reserved.
+//  You may use this code under the terms of the license.
 //
 
 typedef NS_ENUM(NSUInteger, NavigationMode) {

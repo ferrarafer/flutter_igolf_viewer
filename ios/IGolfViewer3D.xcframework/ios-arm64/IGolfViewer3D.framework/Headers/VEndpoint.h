@@ -2,8 +2,8 @@
 //  VEndpoint.h
 //  VNetworkClient
 //
-//  Created by Dmitry Klenov on 15/11/2018.
-//  Copyright © 2018 L1 Technologies. All rights reserved.
+//  Copyright (c) 2024. iGolf, Inc. - All Rights Reserved.
+//  You may use this code under the terms of the license.
 //
 
 #import <Foundation/Foundation.h>
@@ -19,7 +19,6 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, readonly) NSString* signatureVersion;
 @property (nonatomic, readonly) NSString* signatureMethod;
 @property (nonatomic, readonly) NSString* responseFormat;
-@property (nonatomic, readonly, nullable) NSString* courseFeedbackUrl;
 
 -(VEndpoint*)    init:(NSString*)host
    applicationAPIKey:(NSString*)applicationAPIKey
@@ -27,8 +26,7 @@ applicationSecretKey:(NSString*)applicationSecretKey
           apiVersion:(NSString*)apiVersion
     signatureVersion:(NSString*)signatureVersion
      signatureMethod:(NSString*)signatureMethod
-      responseFormat:(NSString*)responseFormat
-   courseFeedbackUrl:(NSString*)courseFeedbackUrl;
+       responseFormat:(NSString*)responseFormat;
 
 -(VEndpoint*)    init:(NSString*)host
    applicationAPIKey:(NSString*)applicationAPIKey

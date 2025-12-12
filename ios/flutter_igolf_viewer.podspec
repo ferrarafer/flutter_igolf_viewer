@@ -14,13 +14,14 @@ A new Flutter plugin project.
   s.author           = { 'Your Company' => 'email@example.com' }
   s.source           = { :path => '.' }
   s.source_files = 'Classes/**/*'
+  s.public_header_files = 'Classes/**/*.h'
   s.dependency 'Flutter'
   s.platform = :ios, '15.6'
 
   # IGolfViewer3D framework
   s.vendored_frameworks = 'IGolfViewer3D.xcframework'
 
-  s.resources = 'textures/**/*'
+  s.resources = 'Assets/**/*.png'
 
   # System framework dependencies for IGolfViewer3D
   s.frameworks = 'GLKit', 'CoreLocation'

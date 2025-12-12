@@ -2,7 +2,8 @@
 //  IGolfViewer3D.h
 //  IGolfViewer3D
 //
-//  Created by Dmitry Klenov on 16.12.2021.
+//  Copyright (c) 2024. iGolf, Inc. - All Rights Reserved.
+//  You may use this code under the terms of the license.
 //
 
 #import <Foundation/Foundation.h>

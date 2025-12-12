@@ -2,8 +2,8 @@
 //  OpenGLESRenderView.h
 //  iGolfViewer3D
 //
-//  Created by Yevhen Paschenko on 4/11/17.
-//  Copyright © 2017 Yevhen Paschenko. All rights reserved.
+//  Copyright (c) 2024. iGolf, Inc. - All Rights Reserved.
+//  You may use this code under the terms of the license.
 //
 
 #import <UIKit/UIKit.h>

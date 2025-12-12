@@ -1,6 +1,0 @@
-framework module IGolfViewer3D {
-  umbrella header "IGolfViewer3D.h"
-  export *
-
-  module * { export * }
-}
