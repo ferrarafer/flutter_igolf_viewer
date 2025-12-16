@@ -21,7 +21,10 @@ A new Flutter plugin project.
   # IGolfViewer3D framework
   s.vendored_frameworks = 'IGolfViewer3D.xcframework'
 
-  s.resources = 'Assets/**/*.png'
+  # Resource bundle for textures - CocoaPods will create IGolfViewer3DResources.bundle
+  s.resource_bundles = {
+    'IGolfViewer3DResources' => ['Assets/**/*.png', 'Assets/**/*.ttf']
+  }
 
   # System framework dependencies for IGolfViewer3D
   s.frameworks = 'GLKit', 'CoreLocation'
