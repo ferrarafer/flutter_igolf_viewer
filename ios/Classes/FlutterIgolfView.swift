@@ -10,6 +10,10 @@ class IGolfWrapperView: UIView {
     
     // Callback to notify parent when render view is successfully attached
     var onRenderViewAttached: (() -> Void)?
+    
+    var renderView: CourseRenderView? {
+        return _renderView
+    }
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -93,9 +97,6 @@ class IGolfWrapperView: UIView {
             renderView.setDrawingEnabled(true)
             renderView.updateViewportSize(false)
             
-            print("[IGolfViewer3D-Flutter] Setting NavigationMode to 2DView")
-            renderView.navigationMode = NavigationMode(rawValue: 0)! // NavigationMode2DView
-            
             self.onRenderViewAttached?()
         }
     }
@@ -114,6 +115,7 @@ class IGolfWrapperView: UIView {
 class FlutterIgolfView: NSObject, FlutterPlatformView, CourseRenderViewDelegate {
     private var _wrapperView: IGolfWrapperView
     private var _loader: CourseRenderViewLoader?
+    private var _hasApplied3DMode = false
 
     init(
         frame: CGRect,
@@ -143,6 +145,14 @@ class FlutterIgolfView: NSObject, FlutterPlatformView, CourseRenderViewDelegate 
     
     func courseRenderViewDidLoadCourseData() {
         print("[IGolfViewer3D-Flutter] Delegate: courseRenderViewDidLoadCourseData")
+    }
+
+    func courseRenderViewDidLoadHoleData() {
+        print("[IGolfViewer3D-Flutter] Delegate: courseRenderViewDidLoadHoleData")
+        guard !_hasApplied3DMode, let renderView = _wrapperView.renderView else { return }
+        _hasApplied3DMode = true
+        print("[IGolfViewer3D-Flutter] Setting NavigationMode to 3D FreeCam (post hole load)")
+        renderView.navigationMode = .modeFreeCam
     }
     
     func courseRenderViewDidChange(_ navigationMode: NavigationMode) {
@@ -182,13 +192,13 @@ class FlutterIgolfView: NSObject, FlutterPlatformView, CourseRenderViewDelegate 
         }
 
         // Configure viewer features
-        loader.initialNavigationMode = NavigationMode(rawValue: 0)! // NavigationMode2DView
+        loader.initialNavigationMode = .modeFreeCam
         loader.showCalloutOverlay = false
         loader.drawCentralPathMarkers = false
         loader.drawDogLegMarker = true
         loader.areFrontBackMarkersDynamic = true
         loader.rotateHoleOnLocationChanged = true
-        loader.autoAdvanceActive = false
+        loader.autoAdvanceActive = true
         loader.draw3DCentralLine = false
         
         print("[IGolfViewer3D-Flutter] Loader configured. Starting preload...")
