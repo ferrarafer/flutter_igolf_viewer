@@ -14,10 +14,30 @@ A new Flutter plugin project.
   s.author           = { 'Your Company' => 'email@example.com' }
   s.source           = { :path => '.' }
   s.source_files = 'Classes/**/*'
+  s.public_header_files = 'Classes/**/*.h'
   s.dependency 'Flutter'
-  s.platform = :ios, '11.0'
+  s.platform = :ios, '15.6'
+
+  # IGolfViewer3D framework
+  s.vendored_frameworks = 'IGolfViewer3D.xcframework'
+
+  # Resource bundle for textures - CocoaPods will create IGolfViewer3DResources.bundle
+  s.resource_bundles = {
+    'IGolfViewer3DResources' => ['Assets/**/*.png', 'Assets/**/*.ttf']
+  }
+
+  # System framework dependencies for IGolfViewer3D
+  s.frameworks = 'GLKit', 'CoreLocation'
 
   # Flutter.framework does not contain a i386 slice.
-  s.pod_target_xcconfig = { 'DEFINES_MODULE' => 'YES', 'EXCLUDED_ARCHS[sdk=iphonesimulator*]' => 'i386' }
+  # IGolfViewer3D.xcframework only supports x86_64 for simulator, not arm64
+  s.pod_target_xcconfig = {
+    'DEFINES_MODULE' => 'YES',
+    'EXCLUDED_ARCHS[sdk=iphonesimulator*]' => 'i386 arm64',
+    'VALID_ARCHS[sdk=iphonesimulator*]' => 'x86_64'
+  }
+  s.user_target_xcconfig = {
+    'EXCLUDED_ARCHS[sdk=iphonesimulator*]' => 'arm64'
+  }
   s.swift_version = '5.0'
 end
