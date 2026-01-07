@@ -2,11 +2,11 @@ import Flutter
 import UIKit
 import IGolfViewer3D
 
-private final class CourseViewerEventStreamHandler: NSObject, FlutterStreamHandler {
+final class CourseViewerEventStreamHandler: NSObject, FlutterStreamHandler {
   private var eventSink: FlutterEventSink?
 
   func onListen(withArguments arguments: Any?, eventSink events: @escaping FlutterEventSink) -> FlutterError? {
-    eventSink = events
+    self.eventSink = events
     return nil
   }
 
@@ -34,7 +34,7 @@ public final class SwiftFlutterIgolfViewerPlugin: NSObject, FlutterPlugin {
   }
 
   private func registerPlatformView(with registrar: FlutterPluginRegistrar) {
-    let factory = FlutterIgolfViewerFactory(messenger: registrar.messenger())
+    let factory = FlutterIgolfViewerFactory(messenger: registrar.messenger(), eventStreamHandler: eventStreamHandler)
     registrar.register(factory, withId: "flutter_igolf_viewer")
   }
 

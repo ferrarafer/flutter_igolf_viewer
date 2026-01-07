@@ -40,6 +40,8 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)courseRenderViewDidUpdateRoundTime:(NSTimeInterval)roundTime;
 - (void)courseRenderViewDidUpdateFlagScreenPoint:(CGPoint)point;
 - (void)courseRenderViewDidReceiveTapAtLocation:(CLLocation *)location;
+- (void)courseRenderViewDidReceiveTapWithDistanceToUser:(double)distanceToUser
+                                         distanceToFlag:(double)distanceToFlag;
 - (void)courseRenderViewDidUpdateTotalRoundTime:(NSTimeInterval)roundTime;
 - (void)courseRenderViewDidUpdateCurrentHole:(NSUInteger)currentHole;
 - (void)courseRenderViewDidUpdateHoleWithin:(NSUInteger)holeWithin;

@@ -3,9 +3,11 @@ import UIKit
 
 class FlutterIgolfViewerFactory: NSObject, FlutterPlatformViewFactory {
     private var messenger: FlutterBinaryMessenger
+    private var eventStreamHandler: CourseViewerEventStreamHandler
 
-    init(messenger: FlutterBinaryMessenger) {
+    init(messenger: FlutterBinaryMessenger, eventStreamHandler: CourseViewerEventStreamHandler) {
         self.messenger = messenger
+        self.eventStreamHandler = eventStreamHandler
         super.init()
     }
 
@@ -18,7 +20,8 @@ class FlutterIgolfViewerFactory: NSObject, FlutterPlatformViewFactory {
             frame: frame,
             viewIdentifier: viewId,
             arguments: args,
-            binaryMessenger: messenger
+            binaryMessenger: messenger,
+            eventStreamHandler: eventStreamHandler
         )
     }
 

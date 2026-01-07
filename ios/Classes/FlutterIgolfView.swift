@@ -116,17 +116,20 @@ class FlutterIgolfView: NSObject, FlutterPlatformView, CourseRenderViewDelegate 
     private var _wrapperView: IGolfWrapperView
     private var _loader: CourseRenderViewLoader?
     private var _hasApplied3DMode = false
+    private var _eventStreamHandler: CourseViewerEventStreamHandler
 
     init(
         frame: CGRect,
         viewIdentifier viewId: Int64,
         arguments args: Any?,
-        binaryMessenger messenger: FlutterBinaryMessenger?
+        binaryMessenger messenger: FlutterBinaryMessenger?,
+        eventStreamHandler: CourseViewerEventStreamHandler
     ) {
         print("[IGolfViewer3D-Flutter] FlutterIgolfView init. Frame: \(frame)")
         _wrapperView = IGolfWrapperView(frame: frame)
+        _eventStreamHandler = eventStreamHandler
         super.init()
-        
+
         _wrapperView.pluginDelegate = self
 
         // Parse arguments and configure the viewer
@@ -142,25 +145,132 @@ class FlutterIgolfView: NSObject, FlutterPlatformView, CourseRenderViewDelegate 
     }
     
     // MARK: - CourseRenderViewDelegate
-    
+
     func courseRenderViewDidLoadCourseData() {
         print("[IGolfViewer3D-Flutter] Delegate: courseRenderViewDidLoadCourseData")
+
+        guard let loader = _loader else {
+            print("[IGolfViewer3D-Flutter] Warning: No loader available for course data event")
+            return
+        }
+
+        // Build vectorDataJsonMap matching Android format
+        var vectorDataJsonMap: [String: Any] = [:]
+        vectorDataJsonMap["COURSE_ID"] = loader.idCourse
+
+        let gpsDetails = loader.courseGPSDetailsResponse
+        if !gpsDetails.isEmpty {
+            // Convert to JSON string to match Android format
+            if let jsonData = try? JSONSerialization.data(withJSONObject: gpsDetails),
+               let jsonString = String(data: jsonData, encoding: .utf8) {
+                vectorDataJsonMap["GPS_DETAILS"] = jsonString
+            }
+        }
+
+        let vectorDetails = loader.courseGPSVectorDetailsResponse
+        if !vectorDetails.isEmpty {
+            // Convert to JSON string to match Android format
+            if let jsonData = try? JSONSerialization.data(withJSONObject: vectorDetails),
+               let jsonString = String(data: jsonData, encoding: .utf8) {
+                vectorDataJsonMap[loader.idCourse] = jsonString
+            }
+        }
+
+        let eventData: [String: Any] = [
+            "event": "COURSE_DATA_LOADED",
+            "courseId": loader.idCourse,
+            "vectorDataJsonMap": vectorDataJsonMap
+        ]
+
+        print("[IGolfViewer3D-Flutter] Sending COURSE_DATA_LOADED event: \(eventData)")
+        _eventStreamHandler.send(eventData)
     }
 
     func courseRenderViewDidLoadHoleData() {
         print("[IGolfViewer3D-Flutter] Delegate: courseRenderViewDidLoadHoleData")
+
+        // Send CURRENT_COURSE_CHANGED event (equivalent to Android's setCurrentCourseChangedListener)
+        // This signals that the course is fully loaded and ready for interaction
+        print("[IGolfViewer3D-Flutter] Sending CURRENT_COURSE_CHANGED event")
+        _eventStreamHandler.send(["event": "CURRENT_COURSE_CHANGED"])
+
+        // Also send HOLE_LOADING_FINISHED to match Android behavior
+        print("[IGolfViewer3D-Flutter] Sending HOLE_LOADING_FINISHED event")
+        _eventStreamHandler.send(["event": "HOLE_LOADING_FINISHED"])
+
         guard !_hasApplied3DMode, let renderView = _wrapperView.renderView else { return }
         _hasApplied3DMode = true
         print("[IGolfViewer3D-Flutter] Setting NavigationMode to 3D FreeCam (post hole load)")
         renderView.navigationMode = .modeFreeCam
     }
-    
+
+    func courseRenderViewDidUpdateCurrentHole(_ currentHole: UInt) {
+        print("[IGolfViewer3D-Flutter] Delegate: courseRenderViewDidUpdateCurrentHole: \(currentHole)")
+        let eventData: [String: Any] = [
+            "event": "CURRENT_HOLE_CHANGED",
+            "hole": Int(currentHole)
+        ]
+        _eventStreamHandler.send(eventData)
+    }
+
+    func courseRenderViewFlyoverFinished() {
+        print("[IGolfViewer3D-Flutter] Delegate: courseRenderViewFlyoverFinished")
+        _eventStreamHandler.send(["event": "FLYOVER_FINISHED"])
+    }
+
+    func courseRenderViewDidUpdateDistances(toFrontGreen frontGreen: Double, toCenterGreen centerGreen: Double, toBackGreen backGreen: Double) {
+        print("[IGolfViewer3D-Flutter] Delegate: courseRenderViewDidUpdateDistances - front: \(frontGreen), center: \(centerGreen), back: \(backGreen)")
+        let eventData: [String: Any] = [
+            "event": "GPS_DISTANCES_UPDATED",
+            "front": Int(frontGreen),
+            "center": Int(centerGreen),
+            "back": Int(backGreen)
+        ]
+        _eventStreamHandler.send(eventData)
+    }
+
     func courseRenderViewDidChange(_ navigationMode: NavigationMode) {
         print("[IGolfViewer3D-Flutter] Delegate: courseRenderViewDidChangeNavigationMode: \(navigationMode.rawValue)")
+
+        let modeString: String
+        switch navigationMode {
+        case .mode2DView:
+            modeString = "NavigationMode2D"
+        case .mode2DGreenView:
+            modeString = "GreenView2D"
+        case .mode3DGreenView:
+            modeString = "GreenView3D"
+        case .modeOverallHole:
+            modeString = "OverallHole"
+        case .modeFreeCam:
+            modeString = "FreeCam"
+        case .modeFlyover:
+            modeString = "Flyover"
+        case .modeFlyoverPause:
+            modeString = "FlyoverPause"
+        @unknown default:
+            modeString = "Unknown"
+        }
+
+        let eventData: [String: Any] = [
+            "event": "NAVIGATION_MODE_CHANGED",
+            "mode": modeString
+        ]
+        _eventStreamHandler.send(eventData)
     }
-    
+
     func courseRenderViewDidFailWithError(_ error: Error) {
         print("[IGolfViewer3D-Flutter] Delegate: courseRenderViewDidFailWithError: \(error.localizedDescription)")
+    }
+
+    func courseRenderViewDidReceiveTap(withDistanceToUser distanceToUser: Double, distanceToFlag: Double) {
+        print("[IGolfViewer3D-Flutter] Delegate: USER_TAPS_VIEWER - toUser: \(distanceToUser), toFlag: \(distanceToFlag)")
+        let eventData: [String: Any] = [
+            "event": "USER_TAPS_VIEWER",
+            "targetToUser": Int(distanceToUser),
+            "targetToFlag": Int(distanceToFlag)
+        ]
+        _eventStreamHandler.send(eventData)
     }
 
     private func configureViewer(with arguments: [String: Any]) {
