@@ -1,5 +1,6 @@
 import Flutter
 import UIKit
+import CoreLocation
 import IGolfViewer3D
 
 class IGolfWrapperView: UIView {
@@ -117,6 +118,7 @@ class FlutterIgolfView: NSObject, FlutterPlatformView, CourseRenderViewDelegate 
     private var _loader: CourseRenderViewLoader?
     private var _hasApplied3DMode = false
     private var _eventStreamHandler: CourseViewerEventStreamHandler
+    private var _methodChannel: FlutterMethodChannel?
 
     init(
         frame: CGRect,
@@ -131,6 +133,16 @@ class FlutterIgolfView: NSObject, FlutterPlatformView, CourseRenderViewDelegate 
         super.init()
 
         _wrapperView.pluginDelegate = self
+
+        // Setup method channel for this view (matching Android)
+        if let messenger = messenger {
+            let channelName = "plugins.filledstacks.flutter_igolf_viewer/course_viewer_method"
+            _methodChannel = FlutterMethodChannel(name: channelName, binaryMessenger: messenger)
+            _methodChannel?.setMethodCallHandler { [weak self] call, result in
+                self?.handleMethodCall(call, result: result)
+            }
+            print("[IGolfViewer3D-Flutter] Method channel registered: \(channelName)")
+        }
 
         // Parse arguments and configure the viewer
         if let arguments = args as? [String: Any] {
@@ -263,7 +275,197 @@ class FlutterIgolfView: NSObject, FlutterPlatformView, CourseRenderViewDelegate 
         print("[IGolfViewer3D-Flutter] Delegate: courseRenderViewDidFailWithError: \(error.localizedDescription)")
     }
 
-    func courseRenderViewDidReceiveTap(withDistanceToUser distanceToUser: Double, distanceToFlag: Double) {
+    // MARK: - Method Channel Handlers
+
+    private func handleMethodCall(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
+        print("[IGolfViewer3D-Flutter] Method call: \(call.method)")
+
+        switch call.method {
+        case "getCurrentHole":
+            getCurrentHole(result: result)
+        case "getNavigationMode":
+            getNavigationMode(result: result)
+        case "getNumHoles":
+            getNumHoles(result: result)
+        case "isMetricUnits":
+            isMetricUnits(result: result)
+        case "setCurrentHole":
+            setCurrentHole(call: call, result: result)
+        case "setNavigationMode":
+            setNavigationMode(call: call, result: result)
+        case "setCurrentLocationGPS":
+            setCurrentLocationGPS(call: call, result: result)
+        case "setMeasurementSystem":
+            setMeasurementSystem(call: call, result: result)
+        case "setCartLocationVisible":
+            setCartLocationVisible(call: call, result: result)
+        default:
+            result(FlutterMethodNotImplemented)
+        }
+    }
+
+    private func getCurrentHole(result: FlutterResult) {
+        guard let renderView = _wrapperView.renderView else {
+            result(FlutterError(code: "NO_VIEW", message: "Render view not initialized", details: nil))
+            return
+        }
+        result(Int(renderView.currentHole))
+    }
+
+    private func getNavigationMode(result: FlutterResult) {
+        guard let renderView = _wrapperView.renderView else {
+            result(FlutterError(code: "NO_VIEW", message: "Render view not initialized", details: nil))
+            return
+        }
+        let modeString = navigationModeToString(renderView.navigationMode)
+        result(modeString)
+    }
+
+    private func getNumHoles(result: FlutterResult) {
+        guard let renderView = _wrapperView.renderView else {
+            result(FlutterError(code: "NO_VIEW", message: "Render view not initialized", details: nil))
+            return
+        }
+        result(Int(renderView.numberOfHoles))
+    }
+
+    private func isMetricUnits(result: FlutterResult) {
+        guard let renderView = _wrapperView.renderView else {
+            result(FlutterError(code: "NO_VIEW", message: "Render view not initialized", details: nil))
+            return
+        }
+        result(renderView.measurementSystem == .metric)
+    }
+
+    private func setCurrentHole(call: FlutterMethodCall, result: FlutterResult) {
+        guard let renderView = _wrapperView.renderView,
+              let args = call.arguments as? [String: Any],
+              let hole = args["hole"] as? Int else {
+            result(FlutterError(code: "INVALID_ARGS", message: "Missing hole parameter", details: nil))
+            return
+        }
+
+        let navigationModeString = args["navigationMode"] as? String ?? "freeCam"
+        let navigationMode = stringToNavigationMode(navigationModeString)
+
+        renderView.currentHole = UInt(hole)
+        renderView.navigationMode = navigationMode
+
+        print("[IGolfViewer3D-Flutter] Set current hole to \(hole) with navigation mode \(navigationModeString)")
+        result("Set current hole to \(hole) with NavigationMode \(navigationModeString)")
+    }
+
+    private func setNavigationMode(call: FlutterMethodCall, result: FlutterResult) {
+        guard let renderView = _wrapperView.renderView,
+              let args = call.arguments as? [String: Any],
+              let modeString = args["mode"] as? String else {
+            result(FlutterError(code: "INVALID_ARGS", message: "Missing mode parameter", details: nil))
+            return
+        }
+
+        let navigationMode = stringToNavigationMode(modeString)
+        renderView.navigationMode = navigationMode
+
+        print("[IGolfViewer3D-Flutter] Set navigation mode to \(modeString)")
+        result("Result from native side for \(modeString)")
+    }
+
+    private func setCurrentLocationGPS(call: FlutterMethodCall, result: FlutterResult) {
+        guard let renderView = _wrapperView.renderView,
+              let args = call.arguments as? [String: Any],
+              let latitude = args["latitude"] as? Double,
+              let longitude = args["longitude"] as? Double else {
+            result(FlutterError(code: "INVALID_ARGS", message: "Missing latitude/longitude parameters", details: nil))
+            return
+        }
+
+        let location = CLLocation(latitude: latitude, longitude: longitude)
+
+        // Set the current location on the render view
+        renderView.currentLocation = location
+
+        // Also set simulated location if updateCameraPos is true
+        let updateCameraPos = args["updateCameraPos"] as? Bool ?? false
+        if updateCameraPos {
+            renderView.setSimulatedLocation(location)
+        }
+
+        print("[IGolfViewer3D-Flutter] Set current location GPS: lat=\(latitude), lon=\(longitude), updateCameraPos=\(updateCameraPos)")
+        result(true)
+    }
+
+    private func setMeasurementSystem(call: FlutterMethodCall, result: FlutterResult) {
+        guard let renderView = _wrapperView.renderView,
+              let args = call.arguments as? [String: Any],
+              let isMetric = args["isMetricUnits"] as? Bool else {
+            result(FlutterError(code: "INVALID_ARGS", message: "Missing isMetricUnits parameter", details: nil))
+            return
+        }
+
+        renderView.measurementSystem = isMetric ? .metric : .imperial
+
+        print("[IGolfViewer3D-Flutter] Set measurement system to \(isMetric ? "metric" : "imperial")")
+        result(nil)
+    }
+
+    private func setCartLocationVisible(call: FlutterMethodCall, result: FlutterResult) {
+        guard let renderView = _wrapperView.renderView,
+              let args = call.arguments as? [String: Any],
+              let isVisible = args["cartLocationVisible"] as? Bool else {
+            result(FlutterError(code: "INVALID_ARGS", message: "Missing cartLocationVisible parameter", details: nil))
+            return
+        }
+
+        renderView.showCartGpsPosition = isVisible
+
+        print("[IGolfViewer3D-Flutter] Set cart location visible to \(isVisible)")
+        result(nil)
+    }
+
+    private func stringToNavigationMode(_ mode: String) -> NavigationMode {
+        switch mode.lowercased() {
+        case "flyover":
+            return .modeFlyover
+        case "flyoverpause":
+            return .modeFlyoverPause
+        case "freecam":
+            return .modeFreeCam
+        case "greenview2d":
+            return .mode2DGreenView
+        case "greenview3d":
+            return .mode3DGreenView
+        case "overallhole":
+            return .modeOverallHole
+        case "navigationmode2d":
+            return .mode2DView
+        default:
+            return .modeFreeCam
+        }
+    }
+
+    private func navigationModeToString(_ mode: NavigationMode) -> String {
+        switch mode {
+        case .mode2DView:
+            return "NavigationMode2D"
+        case .mode2DGreenView:
+            return "GreenView2D"
+        case .mode3DGreenView:
+            return "GreenView3D"
+        case .modeOverallHole:
+            return "OverallHole"
+        case .modeFreeCam:
+            return "FreeCam"
+        case .modeFlyover:
+            return "Flyover"
+        case .modeFlyoverPause:
+            return "FlyoverPause"
+        @unknown default:
+            return "Unknown"
+        }
+    }
+
+    // Method name as expected by the framework's Swift bridging header
+    func courseRenderViewDidReceiveTapWithDistance(toUser distanceToUser: Double, distanceToFlag: Double) {
         print("[IGolfViewer3D-Flutter] Delegate: USER_TAPS_VIEWER - toUser: \(distanceToUser), toFlag: \(distanceToFlag)")
         let eventData: [String: Any] = [
             "event": "USER_TAPS_VIEWER",
@@ -345,6 +547,7 @@ class FlutterIgolfView: NSObject, FlutterPlatformView, CourseRenderViewDelegate 
 
     deinit {
         print("[IGolfViewer3D-Flutter] Deinit")
+        _methodChannel?.setMethodCallHandler(nil)
         _wrapperView.cleanup()
     }
 }

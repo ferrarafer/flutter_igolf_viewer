@@ -1,6 +1,6 @@
 name: flutter_igolf_viewer
-description: "A new Flutter plugin project."
-version: 0.7.0
+description: "The igolf plugin for Flutter"
+version: 0.8.0
 homepage:
 
 environment:

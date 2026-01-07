@@ -43,6 +43,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, assign) BOOL rotateHoleOnLocationChanged;
 @property (nonatomic, assign) BOOL cutLayersByHoleBackground;
 @property (nonatomic, assign) BOOL draw3DCentralLine;
+@property (nonatomic, assign) BOOL showTapDistanceMarker;
 @property (nonatomic, assign) NavigationMode initialNavigationMode;
 @property (nonatomic, assign) TextureQuality textureQuality;
 @property (nonatomic, assign) CalloutsDrawMode calloutsDrawMode;
