@@ -6,6 +6,9 @@
 //  You may use this code under the terms of the license.
 //
 
+// Framework version - update this when rebuilding to verify cache is cleared
+#define IGOLF_VIEWER_BUILD_VERSION @"2026.01.07.4"
+
 #import <UIKit/UIKit.h>
 #import <GLKit/GLKit.h>
 #import <CoreLocation/CoreLocation.h>
@@ -40,6 +43,8 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)courseRenderViewDidUpdateRoundTime:(NSTimeInterval)roundTime;
 - (void)courseRenderViewDidUpdateFlagScreenPoint:(CGPoint)point;
 - (void)courseRenderViewDidReceiveTapAtLocation:(CLLocation *)location;
+- (void)courseRenderViewDidReceiveTapWithDistanceToUser:(double)distanceToUser
+                                         distanceToFlag:(double)distanceToFlag;
 - (void)courseRenderViewDidUpdateTotalRoundTime:(NSTimeInterval)roundTime;
 - (void)courseRenderViewDidUpdateCurrentHole:(NSUInteger)currentHole;
 - (void)courseRenderViewDidUpdateHoleWithin:(NSUInteger)holeWithin;
@@ -77,6 +82,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, assign)   BOOL autozoomActive;
 @property (nonatomic, assign)   BOOL shouldSendFlagScreenPointCoordinate;
 @property (nonatomic, readonly) BOOL usesOverridedPinPosition;
+@property (nonatomic, assign)   BOOL showTapDistanceMarker;
 
 
 @property (nonatomic, readonly) CGPoint flagScreenPoint;

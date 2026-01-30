@@ -1,12 +1,14 @@
-import 'package:flutter/material.dart';
 import 'dart:async';
 
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_igolf_viewer/flutter_igolf_course_details_api_method_channel.dart';
 import 'package:flutter_igolf_viewer/flutter_igolf_viewer.dart';
 
-const _igolfApiKey = String.fromEnvironment('IGOLF_API_KEY');
-const _igolfSecretKey = String.fromEnvironment('IGOLF_SECRET_KEY');
+const _igolfApiKey =
+    String.fromEnvironment('IGOLF_API_KEY', defaultValue: "gAil-pspH8q4PgM");
+const _igolfSecretKey = String.fromEnvironment('IGOLF_SECRET_KEY',
+    defaultValue: "CgkDhdiAZoocUWf135VlKc4BGd2xrq");
 
 void main() {
   runApp(const MyApp());
@@ -60,7 +62,7 @@ class _MyAppState extends State<MyApp> {
         body: FlutterIgolfViewer(
           apiKey: _igolfApiKey,
           secretKey: _igolfSecretKey,
-          courseId: "Rr049ibjL111",
+          courseId: "fAwbKaonIp7Q",
         ),
       ),
     );
