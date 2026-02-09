@@ -347,8 +347,23 @@ class FlutterIgolfView: NSObject, FlutterPlatformView, CourseRenderViewDelegate 
 
         let navigationModeString = args["navigationMode"] as? String ?? "freeCam"
         let navigationMode = stringToNavigationMode(navigationModeString)
+        let requestedHole = UInt(max(hole, 0))
 
-        renderView.currentHole = UInt(hole)
+        if renderView.currentHole == requestedHole && renderView.navigationMode == navigationMode {
+            NSLog("[IGolfViewer3D-Flutter] setCurrentHole no-op (hole=%d, mode=%@)", hole, navigationModeString)
+            result("No-op: current hole and navigation mode already set")
+            return
+        }
+
+        NSLog(
+            "[IGolfViewer3D-Flutter] setCurrentHole apply (from hole=%d/mode=%@ to hole=%d/mode=%@)",
+            Int(renderView.currentHole),
+            navigationModeToString(renderView.navigationMode),
+            hole,
+            navigationModeString
+        )
+
+        renderView.currentHole = requestedHole
         renderView.navigationMode = navigationMode
 
         // print("[IGolfViewer3D-Flutter] Set current hole to \(hole) with navigation mode \(navigationModeString)")
@@ -389,6 +404,13 @@ class FlutterIgolfView: NSObject, FlutterPlatformView, CourseRenderViewDelegate 
         if updateCameraPos {
             renderView.setSimulatedLocation(location)
         }
+
+        NSLog(
+            "[IGolfViewer3D-Flutter] setCurrentLocationGPS lat=%.6f lon=%.6f updateCameraPos=%@",
+            latitude,
+            longitude,
+            updateCameraPos ? "true" : "false"
+        )
 
         // print("[IGolfViewer3D-Flutter] Set current location GPS: lat=\(latitude), lon=\(longitude), updateCameraPos=\(updateCameraPos)")
         result(true)
@@ -509,8 +531,9 @@ class FlutterIgolfView: NSObject, FlutterPlatformView, CourseRenderViewDelegate 
         loader.drawCentralPathMarkers = false
         loader.drawDogLegMarker = true
         loader.areFrontBackMarkersDynamic = true
-        loader.rotateHoleOnLocationChanged = true
-        loader.autoAdvanceActive = true
+        // Keep Dart as single source of truth for auto-advance and hole-rotation decisions.
+        loader.rotateHoleOnLocationChanged = false
+        loader.autoAdvanceActive = false
         loader.draw3DCentralLine = false
         
         // print("[IGolfViewer3D-Flutter] Loader configured. Starting preload...")
