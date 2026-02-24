@@ -3,6 +3,20 @@ import UIKit
 import CoreLocation
 import IGolfViewer3D
 
+@objcMembers
+private final class IGolfResponseDictionaryWrapper: NSObject {
+    private let payload: NSDictionary
+
+    init(payload: NSDictionary) {
+        self.payload = payload
+        super.init()
+    }
+
+    @objc func dict() -> NSDictionary {
+        return payload
+    }
+}
+
 class IGolfWrapperView: UIView {
     private var _renderView: CourseRenderView?
     private var _loader: CourseRenderViewLoader?
@@ -576,6 +590,16 @@ class FlutterIgolfView: NSObject, FlutterPlatformView, CourseRenderViewDelegate 
         loadingView.startAnimating()
         loader.setLoading(loadingView)
 
+        if configureLoaderWithOfflinePayload(arguments: arguments, loader: loader, courseId: courseId) {
+            NSLog("[IGolfViewer3D-Flutter] Offline payload branch selected for courseId=%@", courseId)
+            DispatchQueue.main.async { [weak self] in
+                self?._wrapperView.setLoader(loader)
+            }
+            return
+        }
+
+        NSLog("[IGolfViewer3D-Flutter] Falling back to preload branch for courseId=%@", courseId)
+
         // Preload course data asynchronously
         loader.preload(
             completionHandler: { [weak self] in
@@ -595,6 +619,65 @@ class FlutterIgolfView: NSObject, FlutterPlatformView, CourseRenderViewDelegate 
                 }
             }
         )
+    }
+
+    private func configureLoaderWithOfflinePayload(
+        arguments: [String: Any],
+        loader: CourseRenderViewLoader,
+        courseId: String
+    ) -> Bool {
+        guard let parDataRaw = arguments["parData"] as? String,
+              let gpsDetailsRaw = arguments["gpsDetails"] as? String,
+              let vectorGpsObjectRaw = arguments["vectorGpsObject"] as? String else {
+            return false
+        }
+
+        let parData = parDataRaw.trimmingCharacters(in: .whitespacesAndNewlines)
+        let gpsDetails = gpsDetailsRaw.trimmingCharacters(in: .whitespacesAndNewlines)
+        let vectorGpsObject = vectorGpsObjectRaw.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        guard !parData.isEmpty, !gpsDetails.isEmpty, !vectorGpsObject.isEmpty else {
+            return false
+        }
+
+        guard parseJsonDictionary(from: parData) != nil,
+              let gpsDetailsJson = parseJsonDictionary(from: gpsDetails),
+              let vectorGpsJson = parseJsonDictionary(from: vectorGpsObject) else {
+            NSLog("[IGolfViewer3D-Flutter] Offline payload parse failed for courseId=%@", courseId)
+            return false
+        }
+
+        let setGpsDetailsSelector = NSSelectorFromString("setCourseGPSDetailsResponse:")
+        let setVectorGpsSelector = NSSelectorFromString("setCourseGPSVectorDetailsResponse:")
+        let setIsPreloadedSelector = NSSelectorFromString("setIsPreloaded:")
+
+        guard loader.responds(to: setGpsDetailsSelector),
+              loader.responds(to: setVectorGpsSelector),
+              loader.responds(to: setIsPreloadedSelector) else {
+            NSLog("[IGolfViewer3D-Flutter] Offline payload selectors unavailable for courseId=%@", courseId)
+            return false
+        }
+
+        let gpsPayload = IGolfResponseDictionaryWrapper(payload: gpsDetailsJson as NSDictionary)
+        let vectorPayload = IGolfResponseDictionaryWrapper(payload: vectorGpsJson as NSDictionary)
+
+        _ = loader.perform(setGpsDetailsSelector, with: gpsPayload)
+        _ = loader.perform(setVectorGpsSelector, with: vectorPayload)
+        _ = loader.perform(setIsPreloadedSelector, with: NSNumber(value: true))
+
+        NSLog("[IGolfViewer3D-Flutter] Offline payload parse succeeded for courseId=%@", courseId)
+        return true
+    }
+
+    private func parseJsonDictionary(from raw: String) -> [String: Any]? {
+        guard let data = raw.data(using: .utf8) else { return nil }
+
+        do {
+            let json = try JSONSerialization.jsonObject(with: data)
+            return json as? [String: Any]
+        } catch {
+            return nil
+        }
     }
 
     deinit {
