@@ -117,6 +117,7 @@ class FlutterIgolfView: NSObject, FlutterPlatformView, CourseRenderViewDelegate 
     private var _wrapperView: IGolfWrapperView
     private var _loader: CourseRenderViewLoader?
     private var _hasApplied3DMode = false
+    private var _pendingHoleChangeNavigationMode: (hole: UInt, mode: NavigationMode)?
     private var _eventStreamHandler: CourseViewerEventStreamHandler
     private var _methodChannel: FlutterMethodChannel?
 
@@ -210,7 +211,21 @@ class FlutterIgolfView: NSObject, FlutterPlatformView, CourseRenderViewDelegate 
         // print("[IGolfViewer3D-Flutter] Sending HOLE_LOADING_FINISHED event")
         _eventStreamHandler.send(["event": "HOLE_LOADING_FINISHED"])
 
-        guard !_hasApplied3DMode, let renderView = _wrapperView.renderView else { return }
+        guard let renderView = _wrapperView.renderView else { return }
+
+        // iOS SDK can reset the mode during hole transitions; apply the requested mode
+        // once the new hole data is fully loaded to match Android behavior.
+        if let pending = _pendingHoleChangeNavigationMode,
+           pending.hole == renderView.currentHole {
+            renderView.initialNavigationMode = pending.mode
+            renderView.navigationMode = pending.mode
+            _pendingHoleChangeNavigationMode = nil
+            _hasApplied3DMode = true
+            return
+        }
+
+        guard !_hasApplied3DMode else { return }
+
         _hasApplied3DMode = true
         // print("[IGolfViewer3D-Flutter] Setting NavigationMode to 3D FreeCam (post hole load)")
         renderView.navigationMode = .modeFreeCam
@@ -363,8 +378,22 @@ class FlutterIgolfView: NSObject, FlutterPlatformView, CourseRenderViewDelegate 
             navigationModeString
         )
 
+        let shouldDeferNavigationMode =
+            navigationMode == .modeFlyover || navigationMode == .modeFlyoverPause
+
+        if shouldDeferNavigationMode {
+            // Applying flyover before the hole finishes loading can produce
+            // camera paths from stale hole state. Defer to didLoadHoleData.
+            renderView.initialNavigationMode = navigationMode
+            _pendingHoleChangeNavigationMode = (hole: requestedHole, mode: navigationMode)
+        } else {
+            _pendingHoleChangeNavigationMode = nil
+        }
+
         renderView.currentHole = requestedHole
-        renderView.navigationMode = navigationMode
+        if !shouldDeferNavigationMode {
+            renderView.navigationMode = navigationMode
+        }
 
         // print("[IGolfViewer3D-Flutter] Set current hole to \(hole) with navigation mode \(navigationModeString)")
         result("Set current hole to \(hole) with NavigationMode \(navigationModeString)")
