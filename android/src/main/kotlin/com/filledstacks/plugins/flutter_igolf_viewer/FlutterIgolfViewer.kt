@@ -8,8 +8,6 @@ import android.widget.TextView
 import com.filledstacks.plugins.flutter_igolf_viewer.channels.CourseViewerEventChannel
 import com.filledstacks.plugins.flutter_igolf_viewer.network.Network
 import com.google.gson.Gson
-import com.google.gson.GsonBuilder
-import com.google.gson.reflect.TypeToken
 import com.l1inc.viewer.Course3DRenderer
 import com.l1inc.viewer.Course3DRendererBase
 import com.l1inc.viewer.Course3DRendererBase.NavigationMode
@@ -22,6 +20,7 @@ import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.EventChannel
 import io.flutter.plugin.platform.PlatformView
+import org.json.JSONObject
 import java.io.File
 import java.lang.RuntimeException
 
@@ -353,11 +352,25 @@ internal class FlutterIgolfViewer(
     }
 
     private fun convertParData(jsonString: String): Map<String?, Array<Int>?> {
-        val gson = GsonBuilder()
-            .registerTypeAdapter(object : TypeToken<Map<String?, Array<Int>?>>() {}.type, MapDeserializer())
-            .create()
-        val type = object : TypeToken<Map<String?, Array<Int>?>>() {}.type
-        return gson.fromJson(jsonString, type)
+        val jsonObject = JSONObject(jsonString)
+        val resultMap = mutableMapOf<String?, Array<Int>?>()
+
+        val keys = jsonObject.keys()
+        while (keys.hasNext()) {
+            val key = keys.next()
+            val jsonArray = jsonObject.optJSONArray(key)
+            if (jsonArray == null) {
+                resultMap[key] = emptyArray()
+                continue
+            }
+
+            val values = Array(jsonArray.length()) { index ->
+                jsonArray.optInt(index, 0)
+            }
+            resultMap[key] = values
+        }
+
+        return resultMap
     }
 
     private fun writeStringToFile(context: Context, content: String, filename: String) {

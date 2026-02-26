@@ -39,6 +39,3 @@ flutter:
         pluginClass: FlutterIgolfViewerPlugin
       ios:
         pluginClass: FlutterIgolfViewerPlugin
-
-  assets:
-    - ios/Assets/
