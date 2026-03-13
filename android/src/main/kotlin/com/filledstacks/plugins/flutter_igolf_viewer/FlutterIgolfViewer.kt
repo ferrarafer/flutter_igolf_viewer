@@ -141,7 +141,6 @@ internal class FlutterIgolfViewer(
 
     override fun dispose() {
         course3DViewer.viewer.onDestroy()
-        methodChannel.setMethodCallHandler(null)
     }
 
     private fun loadCourseData(

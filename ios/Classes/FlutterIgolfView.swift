@@ -681,8 +681,6 @@ class FlutterIgolfView: NSObject, FlutterPlatformView, CourseRenderViewDelegate 
     }
 
     deinit {
-        // print("[IGolfViewer3D-Flutter] Deinit")
-        _methodChannel?.setMethodCallHandler(nil)
         _wrapperView.cleanup()
     }
 }
