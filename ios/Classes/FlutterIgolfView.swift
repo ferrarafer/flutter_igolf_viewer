@@ -3,6 +3,87 @@ import UIKit
 import CoreLocation
 import IGolfViewer3D
 
+struct PendingHoleChangeNavigationMode: Equatable {
+    let hole: UInt
+    let mode: NavigationMode
+}
+
+struct HoleTransitionModePlan: Equatable {
+    let shouldUpdateHole: Bool
+    let shouldApplyModeImmediately: Bool
+    let shouldResetPostLoadModeFlag: Bool
+    let pendingModeAfterHoleLoad: PendingHoleChangeNavigationMode?
+
+    var isNoOp: Bool {
+        !shouldUpdateHole &&
+        !shouldApplyModeImmediately &&
+        !shouldResetPostLoadModeFlag &&
+        pendingModeAfterHoleLoad == nil
+    }
+}
+
+enum HoleLoadModeResolution: Equatable {
+    case applyPending(NavigationMode)
+    case applyBootstrapFreeCam
+    case keepCurrentMode
+}
+
+enum HoleTransitionModePlanner {
+    static func makePlan(
+        currentHole: UInt,
+        currentMode: NavigationMode,
+        requestedHole: UInt,
+        requestedMode: NavigationMode
+    ) -> HoleTransitionModePlan {
+        if currentHole == requestedHole && currentMode == requestedMode {
+            return HoleTransitionModePlan(
+                shouldUpdateHole: false,
+                shouldApplyModeImmediately: false,
+                shouldResetPostLoadModeFlag: false,
+                pendingModeAfterHoleLoad: nil
+            )
+        }
+
+        if currentHole == requestedHole {
+            return HoleTransitionModePlan(
+                shouldUpdateHole: false,
+                shouldApplyModeImmediately: true,
+                shouldResetPostLoadModeFlag: false,
+                pendingModeAfterHoleLoad: nil
+            )
+        }
+
+        let shouldApplyModeImmediately =
+            requestedMode != .modeFlyover && requestedMode != .modeFlyoverPause
+
+        return HoleTransitionModePlan(
+            shouldUpdateHole: true,
+            shouldApplyModeImmediately: shouldApplyModeImmediately,
+            shouldResetPostLoadModeFlag: true,
+            pendingModeAfterHoleLoad: PendingHoleChangeNavigationMode(
+                hole: requestedHole,
+                mode: requestedMode
+            )
+        )
+    }
+
+    static func resolveModeAfterHoleLoad(
+        loadedHole: UInt,
+        pendingMode: PendingHoleChangeNavigationMode?,
+        hasAppliedPostLoadMode: Bool
+    ) -> HoleLoadModeResolution {
+        if let pendingMode, pendingMode.hole == loadedHole {
+            return .applyPending(pendingMode.mode)
+        }
+
+        if hasAppliedPostLoadMode {
+            return .keepCurrentMode
+        }
+
+        return .applyBootstrapFreeCam
+    }
+}
+
 @objcMembers
 private final class IGolfResponseDictionaryWrapper: NSObject {
     private let payload: NSDictionary
@@ -131,7 +212,7 @@ class FlutterIgolfView: NSObject, FlutterPlatformView, CourseRenderViewDelegate 
     private var _wrapperView: IGolfWrapperView
     private var _loader: CourseRenderViewLoader?
     private var _hasApplied3DMode = false
-    private var _pendingHoleChangeNavigationMode: (hole: UInt, mode: NavigationMode)?
+    private var _pendingHoleChangeNavigationMode: PendingHoleChangeNavigationMode?
     private var _eventStreamHandler: CourseViewerEventStreamHandler
     private var _methodChannel: FlutterMethodChannel?
     private var _lastTapLocation: CLLocation?
@@ -228,22 +309,23 @@ class FlutterIgolfView: NSObject, FlutterPlatformView, CourseRenderViewDelegate 
 
         guard let renderView = _wrapperView.renderView else { return }
 
-        // iOS SDK can reset the mode during hole transitions; apply the requested mode
-        // once the new hole data is fully loaded to match Android behavior.
-        if let pending = _pendingHoleChangeNavigationMode,
-           pending.hole == renderView.currentHole {
-            renderView.initialNavigationMode = pending.mode
-            renderView.navigationMode = pending.mode
+        switch HoleTransitionModePlanner.resolveModeAfterHoleLoad(
+            loadedHole: renderView.currentHole,
+            pendingMode: _pendingHoleChangeNavigationMode,
+            hasAppliedPostLoadMode: _hasApplied3DMode
+        ) {
+        case .applyPending(let mode):
+            renderView.initialNavigationMode = mode
+            renderView.navigationMode = mode
             _pendingHoleChangeNavigationMode = nil
             _hasApplied3DMode = true
-            return
+        case .applyBootstrapFreeCam:
+            _hasApplied3DMode = true
+            // print("[IGolfViewer3D-Flutter] Setting NavigationMode to 3D FreeCam (post hole load)")
+            renderView.navigationMode = .modeFreeCam
+        case .keepCurrentMode:
+            break
         }
-
-        guard !_hasApplied3DMode else { return }
-
-        _hasApplied3DMode = true
-        // print("[IGolfViewer3D-Flutter] Setting NavigationMode to 3D FreeCam (post hole load)")
-        renderView.navigationMode = .modeFreeCam
     }
 
     func courseRenderViewDidUpdateCurrentHole(_ currentHole: UInt) {
@@ -393,20 +475,31 @@ class FlutterIgolfView: NSObject, FlutterPlatformView, CourseRenderViewDelegate 
             navigationModeString
         )
 
-        let shouldDeferNavigationMode =
-            navigationMode == .modeFlyover || navigationMode == .modeFlyoverPause
+        let plan = HoleTransitionModePlanner.makePlan(
+            currentHole: renderView.currentHole,
+            currentMode: renderView.navigationMode,
+            requestedHole: requestedHole,
+            requestedMode: navigationMode
+        )
 
-        if shouldDeferNavigationMode {
-            // Applying flyover before the hole finishes loading can produce
-            // camera paths from stale hole state. Defer to didLoadHoleData.
-            renderView.initialNavigationMode = navigationMode
-            _pendingHoleChangeNavigationMode = (hole: requestedHole, mode: navigationMode)
-        } else {
-            _pendingHoleChangeNavigationMode = nil
+        if plan.isNoOp {
+            NSLog("[IGolfViewer3D-Flutter] setCurrentHole no-op after planning (hole=%d, mode=%@)", hole, navigationModeString)
+            result("No-op: current hole and navigation mode already set")
+            return
         }
 
-        renderView.currentHole = requestedHole
-        if !shouldDeferNavigationMode {
+        _pendingHoleChangeNavigationMode = plan.pendingModeAfterHoleLoad
+
+        if plan.shouldResetPostLoadModeFlag {
+            _hasApplied3DMode = false
+        }
+
+        if plan.shouldUpdateHole {
+            renderView.initialNavigationMode = navigationMode
+            renderView.currentHole = requestedHole
+        }
+
+        if plan.shouldApplyModeImmediately {
             renderView.navigationMode = navigationMode
         }
 
