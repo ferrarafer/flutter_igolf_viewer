@@ -59,11 +59,13 @@ internal class FlutterIgolfViewer(
                 ))
         }
 
-        course3DViewer.viewer.setOnUserTapsViewerListener { targetToUser, targetToFlag ->
+        course3DViewer.viewer.setOnUserTapsViewerListener { targetToUser, targetToFlag, targetLatitude, targetLongitude ->
             eventChannel.sendEvent(mapOf(
                 "event" to "USER_TAPS_VIEWER",
                 "targetToUser" to targetToUser,
-                "targetToFlag" to targetToFlag
+                "targetToFlag" to targetToFlag,
+                "targetLatitude" to targetLatitude,
+                "targetLongitude" to targetLongitude
             ))
         }
 
