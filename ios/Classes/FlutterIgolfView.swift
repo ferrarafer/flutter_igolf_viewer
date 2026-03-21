@@ -134,6 +134,7 @@ class FlutterIgolfView: NSObject, FlutterPlatformView, CourseRenderViewDelegate 
     private var _pendingHoleChangeNavigationMode: (hole: UInt, mode: NavigationMode)?
     private var _eventStreamHandler: CourseViewerEventStreamHandler
     private var _methodChannel: FlutterMethodChannel?
+    private var _lastTapLocation: CLLocation?
 
     init(
         frame: CGRect,
@@ -529,14 +530,24 @@ class FlutterIgolfView: NSObject, FlutterPlatformView, CourseRenderViewDelegate 
         }
     }
 
-    // Method name as expected by the framework's Swift bridging header
+    @objc(courseRenderViewDidReceiveTapAtLocation:)
+    func courseRenderViewDidReceiveTap(atLocation location: CLLocation) {
+        _lastTapLocation = location
+    }
+
     func courseRenderViewDidReceiveTapWithDistance(toUser distanceToUser: Double, distanceToFlag: Double) {
-        // print("[IGolfViewer3D-Flutter] Delegate: USER_TAPS_VIEWER - toUser: \(distanceToUser), toFlag: \(distanceToFlag)")
-        let eventData: [String: Any] = [
+        var eventData: [String: Any] = [
             "event": "USER_TAPS_VIEWER",
             "targetToUser": Int(distanceToUser),
             "targetToFlag": Int(distanceToFlag)
         ]
+
+        if let location = _lastTapLocation {
+            eventData["targetLatitude"] = location.coordinate.latitude
+            eventData["targetLongitude"] = location.coordinate.longitude
+            _lastTapLocation = nil
+        }
+
         _eventStreamHandler.send(eventData)
     }
 
