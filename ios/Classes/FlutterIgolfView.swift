@@ -171,7 +171,6 @@ class IGolfWrapperView: UIView {
         // print("[IGolfViewer3D-Flutter] Creating CourseRenderView with frame: \(bounds)")
         let renderView = CourseRenderView(frame: bounds)
         renderView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
-        
         // Connect delegate
         if let delegate = pluginDelegate {
             // print("[IGolfViewer3D-Flutter] Setting renderView delegate")
@@ -744,7 +743,7 @@ class FlutterIgolfView: NSObject, FlutterPlatformView, CourseRenderViewDelegate 
             return false
         }
 
-        guard parseJsonDictionary(from: parData) != nil,
+        guard let parDataJson = parseJsonDictionary(from: parData),
               let gpsDetailsJson = parseJsonDictionary(from: gpsDetails),
               let vectorGpsJson = parseJsonDictionary(from: vectorGpsObject) else {
             NSLog("[IGolfViewer3D-Flutter] Offline payload parse failed for courseId=%@", courseId)
@@ -753,10 +752,17 @@ class FlutterIgolfView: NSObject, FlutterPlatformView, CourseRenderViewDelegate 
 
         let setGpsDetailsSelector = NSSelectorFromString("setCourseGPSDetailsResponse:")
         let setVectorGpsSelector = NSSelectorFromString("setCourseGPSVectorDetailsResponse:")
+        let setScorecardDetailsSelector = NSSelectorFromString("setCourseScorecardDetailsResponse:")
         let setIsPreloadedSelector = NSSelectorFromString("setIsPreloaded:")
+
+        guard let scorecardPayload = offlineScorecardPayload(from: parDataJson) else {
+            NSLog("[IGolfViewer3D-Flutter] Offline parData conversion failed for courseId=%@", courseId)
+            return false
+        }
 
         guard loader.responds(to: setGpsDetailsSelector),
               loader.responds(to: setVectorGpsSelector),
+              loader.responds(to: setScorecardDetailsSelector),
               loader.responds(to: setIsPreloadedSelector) else {
             NSLog("[IGolfViewer3D-Flutter] Offline payload selectors unavailable for courseId=%@", courseId)
             return false
@@ -764,9 +770,11 @@ class FlutterIgolfView: NSObject, FlutterPlatformView, CourseRenderViewDelegate 
 
         let gpsPayload = IGolfResponseDictionaryWrapper(payload: gpsDetailsJson as NSDictionary)
         let vectorPayload = IGolfResponseDictionaryWrapper(payload: vectorGpsJson as NSDictionary)
+        let scorecardWrapper = IGolfResponseDictionaryWrapper(payload: scorecardPayload as NSDictionary)
 
         _ = loader.perform(setGpsDetailsSelector, with: gpsPayload)
         _ = loader.perform(setVectorGpsSelector, with: vectorPayload)
+        _ = loader.perform(setScorecardDetailsSelector, with: scorecardWrapper)
         _ = loader.perform(setIsPreloadedSelector, with: NSNumber(value: true))
 
         NSLog("[IGolfViewer3D-Flutter] Offline payload parse succeeded for courseId=%@", courseId)
@@ -782,6 +790,23 @@ class FlutterIgolfView: NSObject, FlutterPlatformView, CourseRenderViewDelegate 
         } catch {
             return nil
         }
+    }
+
+    private func offlineScorecardPayload(from parData: [String: Any]) -> [String: Any]? {
+        let pars = parData.values.first { $0 is [Any] || $0 is NSArray }
+
+        guard let parList = pars as? [Any] else {
+            return nil
+        }
+
+        let scorecardEntry: [String: Any] = [
+            "parHole": parList
+        ]
+
+        return [
+            "menScorecardList": [scorecardEntry],
+            "wmnScorecardList": [scorecardEntry]
+        ]
     }
 
     deinit {
