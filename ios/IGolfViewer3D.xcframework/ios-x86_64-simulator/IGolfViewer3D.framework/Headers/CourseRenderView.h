@@ -106,6 +106,7 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)setDrawingEnabled:(BOOL)isEnabled;
 - (void)dataSourceChanged;
 - (void)setSimulatedLocation:(CLLocation *)simulatedLocation;
+- (nullable CLLocation *)startPointLocation;
 - (void)invalidate;
 
 @end

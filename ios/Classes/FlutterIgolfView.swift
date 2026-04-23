@@ -28,6 +28,11 @@ enum HoleLoadModeResolution: Equatable {
     case keepCurrentMode
 }
 
+struct PendingLocationUpdate {
+    let location: CLLocation
+    let updateCameraPos: Bool
+}
+
 enum HoleTransitionModePlanner {
     static func makePlan(
         currentHole: UInt,
@@ -211,7 +216,10 @@ class FlutterIgolfView: NSObject, FlutterPlatformView, CourseRenderViewDelegate 
     private var _wrapperView: IGolfWrapperView
     private var _loader: CourseRenderViewLoader?
     private var _hasApplied3DMode = false
+    private var _hasLoadedHoleData = false
     private var _pendingHoleChangeNavigationMode: PendingHoleChangeNavigationMode?
+    private var _pendingLocationUpdate: PendingLocationUpdate?
+    private var _shouldApplyStartPointLocation = false
     private var _eventStreamHandler: CourseViewerEventStreamHandler
     private var _methodChannel: FlutterMethodChannel?
     private var _lastTapLocation: CLLocation?
@@ -229,6 +237,9 @@ class FlutterIgolfView: NSObject, FlutterPlatformView, CourseRenderViewDelegate 
         super.init()
 
         _wrapperView.pluginDelegate = self
+        _wrapperView.onRenderViewAttached = { [weak self] in
+            self?.applyPendingLocationIfPossible()
+        }
 
         // Setup method channel for this view (matching Android)
         if let messenger = messenger {
@@ -296,6 +307,7 @@ class FlutterIgolfView: NSObject, FlutterPlatformView, CourseRenderViewDelegate 
 
     func courseRenderViewDidLoadHoleData() {
         // print("[IGolfViewer3D-Flutter] Delegate: courseRenderViewDidLoadHoleData")
+        _hasLoadedHoleData = true
 
         // Send CURRENT_COURSE_CHANGED event (equivalent to Android's setCurrentCourseChangedListener)
         // This signals that the course is fully loaded and ready for interaction
@@ -325,6 +337,9 @@ class FlutterIgolfView: NSObject, FlutterPlatformView, CourseRenderViewDelegate 
         case .keepCurrentMode:
             break
         }
+
+        applyPendingLocationIfPossible()
+        applyStartPointLocationIfPossible()
     }
 
     func courseRenderViewDidUpdateCurrentHole(_ currentHole: UInt) {
@@ -406,6 +421,8 @@ class FlutterIgolfView: NSObject, FlutterPlatformView, CourseRenderViewDelegate 
             setNavigationMode(call: call, result: result)
         case "setCurrentLocationGPS":
             setCurrentLocationGPS(call: call, result: result)
+        case "setTeeBoxAsCurrentLocation":
+            setTeeBoxAsCurrentLocation(call: call, result: result)
         case "setMeasurementSystem":
             setMeasurementSystem(call: call, result: result)
         case "setCartLocationVisible":
@@ -494,6 +511,7 @@ class FlutterIgolfView: NSObject, FlutterPlatformView, CourseRenderViewDelegate 
         }
 
         if plan.shouldUpdateHole {
+            _hasLoadedHoleData = false
             renderView.initialNavigationMode = navigationMode
             renderView.currentHole = requestedHole
         }
@@ -522,8 +540,7 @@ class FlutterIgolfView: NSObject, FlutterPlatformView, CourseRenderViewDelegate 
     }
 
     private func setCurrentLocationGPS(call: FlutterMethodCall, result: FlutterResult) {
-        guard let renderView = _wrapperView.renderView,
-              let args = call.arguments as? [String: Any],
+        guard let args = call.arguments as? [String: Any],
               let latitude = args["latitude"] as? Double,
               let longitude = args["longitude"] as? Double else {
             result(FlutterError(code: "INVALID_ARGS", message: "Missing latitude/longitude parameters", details: nil))
@@ -531,15 +548,21 @@ class FlutterIgolfView: NSObject, FlutterPlatformView, CourseRenderViewDelegate 
         }
 
         let location = CLLocation(latitude: latitude, longitude: longitude)
-
-        // Set the current location on the render view
-        renderView.currentLocation = location
-
-        // Also set simulated location if updateCameraPos is true
         let updateCameraPos = args["updateCameraPos"] as? Bool ?? false
-        if updateCameraPos {
-            renderView.setSimulatedLocation(location)
+
+        guard let renderView = _wrapperView.renderView, _hasLoadedHoleData else {
+            _pendingLocationUpdate = PendingLocationUpdate(
+                location: location,
+                updateCameraPos: updateCameraPos
+            )
+            result(true)
+            return
         }
+
+        applyLocationUpdate(
+            PendingLocationUpdate(location: location, updateCameraPos: updateCameraPos),
+            to: renderView
+        )
 
         NSLog(
             "[IGolfViewer3D-Flutter] setCurrentLocationGPS lat=%.6f lon=%.6f updateCameraPos=%@",
@@ -550,6 +573,73 @@ class FlutterIgolfView: NSObject, FlutterPlatformView, CourseRenderViewDelegate 
 
         // print("[IGolfViewer3D-Flutter] Set current location GPS: lat=\(latitude), lon=\(longitude), updateCameraPos=\(updateCameraPos)")
         result(true)
+    }
+
+    private func applyPendingLocationIfPossible() {
+        guard _hasLoadedHoleData,
+              let renderView = _wrapperView.renderView,
+              let pendingLocationUpdate = _pendingLocationUpdate else {
+            return
+        }
+
+        applyLocationUpdate(pendingLocationUpdate, to: renderView)
+        _pendingLocationUpdate = nil
+    }
+
+    private func setTeeBoxAsCurrentLocation(call: FlutterMethodCall, result: FlutterResult) {
+        guard let args = call.arguments as? [String: Any],
+              let selectedTeeBox = args["selectedTeeBox"] as? Int else {
+            result(FlutterError(code: "INVALID_ARGS", message: "Missing selectedTeeBox parameter", details: nil))
+            return
+        }
+
+        _ = selectedTeeBox
+        _pendingLocationUpdate = nil
+        _shouldApplyStartPointLocation = true
+
+        guard _hasLoadedHoleData else {
+            result(nil)
+            return
+        }
+
+        applyStartPointLocationIfPossible()
+        result(nil)
+    }
+
+    private func applyLocationUpdate(
+        _ update: PendingLocationUpdate,
+        to renderView: CourseRenderView
+    ) {
+        renderView.currentLocation = update.location
+
+        if update.updateCameraPos {
+            renderView.setSimulatedLocation(update.location)
+
+            switch renderView.navigationMode {
+            case .modeFreeCam, .mode3DGreenView:
+                // Reapply the active 3D camera mode so explicit GPS recenter requests
+                // are not blocked by stale free-cam gesture state.
+                let currentMode = renderView.navigationMode
+                renderView.navigationMode = currentMode
+            default:
+                break
+            }
+        }
+    }
+
+    private func applyStartPointLocationIfPossible() {
+        guard _shouldApplyStartPointLocation,
+              _hasLoadedHoleData,
+              let renderView = _wrapperView.renderView,
+              let startPointLocation = renderView.startPointLocation() else {
+            return
+        }
+
+        applyLocationUpdate(
+            PendingLocationUpdate(location: startPointLocation, updateCameraPos: true),
+            to: renderView
+        )
+        _shouldApplyStartPointLocation = false
     }
 
     private func setMeasurementSystem(call: FlutterMethodCall, result: FlutterResult) {
@@ -658,12 +748,20 @@ class FlutterIgolfView: NSObject, FlutterPlatformView, CourseRenderViewDelegate 
             applicationSecretKey: secretKey,
             idCourse: courseId
         )
+        _hasLoadedHoleData = false
 
         // Configure measurement system
         if let isMetricUnits = arguments["isMetricUnits"] as? Bool {
             loader.measurementSystem = isMetricUnits ? .metric : .imperial
         } else {
             loader.measurementSystem = .metric // Default
+        }
+
+        if let golferIconIndex = arguments["golferIconIndex"] as? Int,
+           golferIconIndex >= 0 {
+            loader.golferIconIndex = UInt(golferIconIndex)
+        } else {
+            loader.golferIconIndex = 6
         }
 
         // Configure starting hole
