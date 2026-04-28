@@ -254,6 +254,7 @@ internal class FlutterIgolfViewer(
                 "setTeeBoxAsCurrentLocation" -> setTeeBoxAsCurrentLocation(call, result)
                 "setCurrentLocationGPS" -> setCurrentLocationGPS(call, result)
                 "setMeasurementSystem" -> setMeasurementSystem(call, result)
+                "setFreeCamZoom" -> setFreeCamZoom(call, result)
                 else -> result.notImplemented()
             }
         } catch (e: RuntimeException) {
@@ -331,6 +332,10 @@ internal class FlutterIgolfViewer(
             updateCameraPos,
         );
         result.success(response)
+    }
+
+    private fun setFreeCamZoom(call: MethodCall, result: MethodChannel.Result) {
+        result.success(null)
     }
 
     private fun getTypedNavigationMode(mode: String?): NavigationMode {
