@@ -108,10 +108,15 @@ class IGolfWrapperView: UIView {
     private var _loader: CourseRenderViewLoader?
     private var _pendingLoader: CourseRenderViewLoader?
     weak var pluginDelegate: CourseRenderViewDelegate?
+    var freeCamZoomScale: Double = 1.0 {
+        didSet {
+            _renderView?.freeCamZoomScale = freeCamZoomScale
+        }
+    }
     
     // Callback to notify parent when render view is successfully attached
     var onRenderViewAttached: (() -> Void)?
-    
+
     var renderView: CourseRenderView? {
         return _renderView
     }
@@ -120,11 +125,11 @@ class IGolfWrapperView: UIView {
         super.init(frame: frame)
         // print("[IGolfViewer3D-Flutter] IGolfWrapperView initialized with frame: \(frame)")
     }
-    
+
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
-    
+
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         // print("[IGolfViewer3D-Flutter] IGolfWrapperView received touchesBegan. Count: \(touches.count)")
         super.touchesBegan(touches, with: event)
@@ -176,6 +181,7 @@ class IGolfWrapperView: UIView {
         // print("[IGolfViewer3D-Flutter] Creating CourseRenderView with frame: \(bounds)")
         let renderView = CourseRenderView(frame: bounds)
         renderView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        renderView.freeCamZoomScale = freeCamZoomScale
         // Connect delegate
         if let delegate = pluginDelegate {
             // print("[IGolfViewer3D-Flutter] Setting renderView delegate")
@@ -427,6 +433,8 @@ class FlutterIgolfView: NSObject, FlutterPlatformView, CourseRenderViewDelegate 
             setMeasurementSystem(call: call, result: result)
         case "setCartLocationVisible":
             setCartLocationVisible(call: call, result: result)
+        case "setFreeCamZoom":
+            setFreeCamZoom(call: call, result: result)
         default:
             result(FlutterMethodNotImplemented)
         }
@@ -670,6 +678,17 @@ class FlutterIgolfView: NSObject, FlutterPlatformView, CourseRenderViewDelegate 
         result(nil)
     }
 
+    private func setFreeCamZoom(call: FlutterMethodCall, result: FlutterResult) {
+        guard let args = call.arguments as? [String: Any],
+              let zoom = args["zoom"] as? Int else {
+            result(FlutterError(code: "INVALID_ARGS", message: "Missing zoom parameter", details: nil))
+            return
+        }
+
+        _wrapperView.freeCamZoomScale = freeCamZoomScale(from: zoom)
+        result(nil)
+    }
+
     private func stringToNavigationMode(_ mode: String) -> NavigationMode {
         switch mode.lowercased() {
         case "flyover":
@@ -764,6 +783,12 @@ class FlutterIgolfView: NSObject, FlutterPlatformView, CourseRenderViewDelegate 
             loader.golferIconIndex = 6
         }
 
+        if let freeCamZoom = arguments["freeCamZoom"] as? Int {
+            _wrapperView.freeCamZoomScale = freeCamZoomScale(from: freeCamZoom)
+        } else {
+            _wrapperView.freeCamZoomScale = 1.0
+        }
+
         // Configure starting hole
         if let startingHole = arguments["startingHole"] as? Int {
             loader.hole = UInt(startingHole)
@@ -820,6 +845,12 @@ class FlutterIgolfView: NSObject, FlutterPlatformView, CourseRenderViewDelegate 
                 }
             }
         )
+    }
+
+    private func freeCamZoomScale(from zoom: Int) -> Double {
+        let clampedZoom = min(100, max(0, zoom))
+        let zoomOutAmount = Double(100 - clampedZoom) / 100.0
+        return 1.0 + (zoomOutAmount * 4.0)
     }
 
     private func configureLoaderWithOfflinePayload(

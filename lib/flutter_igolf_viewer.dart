@@ -13,6 +13,8 @@ class FlutterIgolfViewer extends StatelessWidget {
   final String? vectorGpsObject;
   final int golferIconIndex;
   final bool isMetricUnits;
+  final int freeCamZoom;
+
   const FlutterIgolfViewer({
     super.key,
     required this.apiKey,
@@ -25,26 +27,28 @@ class FlutterIgolfViewer extends StatelessWidget {
     this.vectorGpsObject,
     this.golferIconIndex = 6,
     this.isMetricUnits = true,
+    this.freeCamZoom = 100,
   });
+
+  @visibleForTesting
+  Map<String, dynamic> get creationParams => {
+        "apiKey": apiKey,
+        "secretKey": secretKey,
+        "courseId": courseId,
+        "startingHole": startingHole,
+        "initialTeeBox": initialTeeBox,
+        "parData": parData,
+        "gpsDetails": gpsDetails,
+        "vectorGpsObject": vectorGpsObject,
+        "golferIconIndex": golferIconIndex,
+        "isMetricUnits": isMetricUnits,
+        "freeCamZoom": freeCamZoom.clamp(0, 100),
+      };
 
   @override
   Widget build(BuildContext context) {
     // This is used in the platform side to register the view.
     const String viewType = 'flutter_igolf_viewer';
-
-    // Pass parameters to the platform side.
-    final Map<String, dynamic> creationParams = {
-      "apiKey": apiKey,
-      "secretKey": secretKey,
-      "courseId": courseId,
-      "startingHole": startingHole,
-      "initialTeeBox": initialTeeBox,
-      "parData": parData,
-      "gpsDetails": gpsDetails,
-      "vectorGpsObject": vectorGpsObject,
-      "golferIconIndex": golferIconIndex,
-      "isMetricUnits": isMetricUnits,
-    };
 
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
