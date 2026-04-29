@@ -96,6 +96,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, assign)   float renderViewWidthPercent;
 @property (nonatomic, assign)   double flyoverViewAngle;
 @property (nonatomic, assign)   double freeCamViewAngle;
+@property (nonatomic, assign)   double freeCamZoomScale;
 
 @property (nonatomic, readonly) CLLocation* flagLocation;
 @property (class, readonly) CourseRenderView* shared;
