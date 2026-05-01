@@ -5,6 +5,7 @@ import android.graphics.Color
 import android.location.Location
 import android.view.View
 import android.widget.TextView
+import androidx.annotation.VisibleForTesting
 import com.filledstacks.plugins.flutter_igolf_viewer.channels.CourseViewerEventChannel
 import com.filledstacks.plugins.flutter_igolf_viewer.network.Network
 import com.google.gson.Gson
@@ -23,6 +24,18 @@ import io.flutter.plugin.platform.PlatformView
 import org.json.JSONObject
 import java.io.File
 import java.lang.RuntimeException
+
+/**
+ * Maps a [zoom] value in the inclusive range [0, 100] to a free-camera zoom scale
+ * in the inclusive range [1.0, 5.0]. 100 → 1.0 (no zoom-out), 0 → 5.0 (max zoom-out).
+ * Mirrors `freeCamZoomScale(from:)` in `ios/Classes/FlutterIgolfView.swift`.
+ */
+@VisibleForTesting
+internal fun freeCamZoomScale(zoom: Int): Float {
+    val clamped = zoom.coerceIn(0, 100)
+    val zoomOutAmount = (100 - clamped) / 100.0
+    return (1.0 + zoomOutAmount * 4.0).toFloat()
+}
 
 internal class FlutterIgolfViewer(
     context: Context,
@@ -123,13 +136,6 @@ internal class FlutterIgolfViewer(
 
         course3DViewer.viewer.isHoleRotationOnDynamicFrontBackEnabled = true
 
-        (creationParams.get("freeCamZoom") as? Int)?.let { zoom ->
-            val clampedZoom = zoom.coerceIn(0, 100)
-            val zoomOutAmount = (100 - clampedZoom) / 100.0
-            val scale = (1.0 + zoomOutAmount * 4.0).toFloat()
-            course3DViewer.viewer.setFreeCamZoomScale(scale)
-        }
-
         loadCourseData(
             creationParams.get("apiKey"),
             creationParams.get("secretKey"),
@@ -140,7 +146,8 @@ internal class FlutterIgolfViewer(
             creationParams.get("gpsDetails"),
             creationParams.get("vectorGpsObject"),
             creationParams.get("golferIconIndex"),
-            creationParams.get("isMetricUnits")
+            creationParams.get("isMetricUnits"),
+            creationParams.get("freeCamZoom")
         )
     }
 
@@ -162,7 +169,8 @@ internal class FlutterIgolfViewer(
         gpsDetails: Any?,
         vectorGpsObject: Any?,
         golferIconIndex: Any?,
-        isMetricUnits: Any?
+        isMetricUnits: Any?,
+        freeCamZoom: Any?
     ) {
         if (apiKey !is String || apiKey.isBlank()) {
             throw RuntimeException("API key is required")
@@ -192,6 +200,14 @@ internal class FlutterIgolfViewer(
             throw RuntimeException("isMetricUnits should be Boolean")
         }
 
+        // Mirror iOS contract: missing freeCamZoom defaults to 100 (no zoom-out).
+        // Wrong type is a programming error and surfaces like other validations.
+        val resolvedFreeCamZoom: Int = when (freeCamZoom) {
+            null -> 100
+            is Int -> freeCamZoom
+            else -> throw RuntimeException("freeCamZoom should be Integer")
+        }
+
         if (parData != null && gpsDetails != null && vectorGpsObject != null) {
             val vectorGpsMap = HashMap<String?, String?>()
             vectorGpsMap[courseId] = vectorGpsObject as String
@@ -204,13 +220,14 @@ internal class FlutterIgolfViewer(
                 startingHole,
                 initialTeeBox,
                 golferIconIndex,
-                isMetricUnits
+                isMetricUnits,
+                resolvedFreeCamZoom
             )
             return
         }
 
         Network().loadCourseData(apiKey, secretKey, courseId) { parDataMap, vectorDataJsonMap ->
-            initAndShowViewer(parDataMap, vectorDataJsonMap, startingHole, initialTeeBox, golferIconIndex, isMetricUnits)
+            initAndShowViewer(parDataMap, vectorDataJsonMap, startingHole, initialTeeBox, golferIconIndex, isMetricUnits, resolvedFreeCamZoom)
             event.sendEvent(buildMap {
                 put("event", "COURSE_DATA_LOADED")
                 put("courseId", courseId)
@@ -226,7 +243,8 @@ internal class FlutterIgolfViewer(
         startingHole: Int,
         initialTeeBox: Int,
         golferIconIndex: Int,
-        isMetricUnits: Boolean
+        isMetricUnits: Boolean,
+        freeCamZoom: Int
     ) {
         course3DViewer.viewer.init(
             vectorDataJsonMap,
@@ -238,6 +256,10 @@ internal class FlutterIgolfViewer(
             false,
             null
         )
+
+        // Apply zoom AFTER viewer.init so the underlying renderer doesn't reset it.
+        // Mirrors iOS, which re-applies the scale inside setLoader after the renderer is bound.
+        course3DViewer.viewer.setFreeCamZoomScale(freeCamZoomScale(freeCamZoom))
 
         course3DViewer.viewer.setCurrentHole(
             startingHole,
@@ -342,10 +364,12 @@ internal class FlutterIgolfViewer(
     }
 
     private fun setFreeCamZoom(call: MethodCall, result: MethodChannel.Result) {
-        val zoom = (call.argument<Int>("zoom") ?: 100).coerceIn(0, 100)
-        val zoomOutAmount = (100 - zoom) / 100.0
-        val scale = (1.0 + zoomOutAmount * 4.0).toFloat()
-        course3DViewer.viewer.setFreeCamZoomScale(scale)
+        val zoom = call.argument<Int>("zoom")
+        if (zoom == null) {
+            result.error("INVALID_ARGS", "Missing zoom parameter", null)
+            return
+        }
+        course3DViewer.viewer.setFreeCamZoomScale(freeCamZoomScale(zoom))
         result.success(null)
     }
 

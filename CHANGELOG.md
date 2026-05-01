@@ -1,3 +1,10 @@
+## 0.8.6
+
+* feat(android): bring free-camera zoom to parity with iOS — `freeCamZoom` is now applied at init from creation params (defaults to 100 / no zoom-out when absent, matching iOS) and the runtime `setFreeCamZoom` method channel now routes to the underlying `Course3DViewer.viewer.setFreeCamZoomScale(...)` instead of silently no-oping
+* refactor(android): extract pure `freeCamZoomScale(Int): Float` helper so the zoom→scale formula has a single source of truth (mirrors iOS `freeCamZoomScale(from:)`)
+* fix(android): `setFreeCamZoom` now returns `FlutterError("INVALID_ARGS", "Missing zoom parameter", null)` when `zoom` is absent, matching iOS behavior (was silently defaulting to 100)
+* test(android): unit tests for `freeCamZoomScale` (boundaries, midpoint, clamping, monotonicity)
+
 ## 0.6.4
 
 * fix: prevent iOS `MissingPluginException` by registering placeholder method and event channels
