@@ -123,6 +123,13 @@ internal class FlutterIgolfViewer(
 
         course3DViewer.viewer.isHoleRotationOnDynamicFrontBackEnabled = true
 
+        (creationParams.get("freeCamZoom") as? Int)?.let { zoom ->
+            val clampedZoom = zoom.coerceIn(0, 100)
+            val zoomOutAmount = (100 - clampedZoom) / 100.0
+            val scale = (1.0 + zoomOutAmount * 4.0).toFloat()
+            course3DViewer.viewer.setFreeCamZoomScale(scale)
+        }
+
         loadCourseData(
             creationParams.get("apiKey"),
             creationParams.get("secretKey"),
@@ -335,6 +342,10 @@ internal class FlutterIgolfViewer(
     }
 
     private fun setFreeCamZoom(call: MethodCall, result: MethodChannel.Result) {
+        val zoom = (call.argument<Int>("zoom") ?: 100).coerceIn(0, 100)
+        val zoomOutAmount = (100 - zoom) / 100.0
+        val scale = (1.0 + zoomOutAmount * 4.0).toFloat()
+        course3DViewer.viewer.setFreeCamZoomScale(scale)
         result.success(null)
     }
 
