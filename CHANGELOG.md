@@ -1,3 +1,7 @@
+## 0.8.7
+
+* fix(ios): smooth flyover heading updates by clamping rotation overshoot in the vendored `IGolfViewer3D.xcframework`
+
 ## 0.8.6
 
 * feat(android): bring free-camera zoom to parity with iOS — `freeCamZoom` is now applied at init from creation params (defaults to 100 / no zoom-out when absent, matching iOS) and the runtime `setFreeCamZoom` method channel now routes to the underlying `Course3DViewer.viewer.setFreeCamZoomScale(...)` instead of silently no-oping
