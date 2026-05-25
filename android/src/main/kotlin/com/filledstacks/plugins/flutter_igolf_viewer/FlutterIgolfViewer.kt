@@ -3,6 +3,9 @@ package com.filledstacks.plugins.flutter_igolf_viewer
 import android.content.Context
 import android.graphics.Color
 import android.location.Location
+import android.os.Handler
+import android.os.Looper
+import android.util.Log
 import android.view.View
 import android.widget.TextView
 import androidx.annotation.VisibleForTesting
@@ -52,6 +55,11 @@ internal class FlutterIgolfViewer(
     )
 
     private val event : CourseViewerEventChannel = eventChannel
+
+    // Guard so the async init's main-thread continuation doesn't fire on a
+    // viewer the host has already disposed (user navigated away mid-init).
+    @Volatile private var isDisposed = false
+    private val mainHandler = Handler(Looper.getMainLooper())
 
     init {
         if (creationParams == null) {
@@ -156,6 +164,8 @@ internal class FlutterIgolfViewer(
     }
 
     override fun dispose() {
+        isDisposed = true
+        mainHandler.removeCallbacksAndMessages(null)
         course3DViewer.viewer.onDestroy()
     }
 
@@ -246,27 +256,48 @@ internal class FlutterIgolfViewer(
         isMetricUnits: Boolean,
         freeCamZoom: Int
     ) {
-        course3DViewer.viewer.init(
-            vectorDataJsonMap,
-            false,
-            golferIconIndex,
-            isMetricUnits,
-            parDataMap,
-            null,
-            false,
-            null
-        )
+        // viewer.init() is mostly CPU-bound data prep — Gson decode, elevation
+        // parsing, asset Typeface loading, plus setting flags the GL thread
+        // reads in onDrawFrame. Running it on the UI thread freezes the
+        // CircularProgressIndicator on the loading screen for the duration of
+        // the parse. Move it to a background thread; bounce the View-touching
+        // setters (zoom + setCurrentHole, which fires listeners that
+        // ultimately go through the Flutter event channel) back to main.
+        Thread({
+            try {
+                course3DViewer.viewer.init(
+                    vectorDataJsonMap,
+                    false,
+                    golferIconIndex,
+                    isMetricUnits,
+                    parDataMap,
+                    null,
+                    false,
+                    null
+                )
+            } catch (t: Throwable) {
+                Log.e(
+                    "FlutterIgolfViewer",
+                    "viewer.init failed on background thread",
+                    t
+                )
+                return@Thread
+            }
 
-        // Apply zoom AFTER viewer.init so the underlying renderer doesn't reset it.
-        // Mirrors iOS, which re-applies the scale inside setLoader after the renderer is bound.
-        course3DViewer.viewer.setFreeCamZoomScale(freeCamZoomScale(freeCamZoom))
+            mainHandler.post {
+                if (isDisposed) return@post
+                // Apply zoom AFTER viewer.init so the underlying renderer doesn't reset it.
+                // Mirrors iOS, which re-applies the scale inside setLoader after the renderer is bound.
+                course3DViewer.viewer.setFreeCamZoomScale(freeCamZoomScale(freeCamZoom))
 
-        course3DViewer.viewer.setCurrentHole(
-            startingHole,
-            NavigationMode.FreeCam,
-            true,
-            initialTeeBox
-        )
+                course3DViewer.viewer.setCurrentHole(
+                    startingHole,
+                    NavigationMode.FreeCam,
+                    true,
+                    initialTeeBox
+                )
+            }
+        }, "iGolf-viewer-init").start()
     }
 
     override fun onMethodCall(call: MethodCall, result: MethodChannel.Result) {
