@@ -61,6 +61,12 @@ internal class FlutterIgolfViewer(
     @Volatile private var isDisposed = false
     private val mainHandler = Handler(Looper.getMainLooper())
 
+    // Reference to the background init thread, so dispose() can attempt to
+    // interrupt it if it's still inside viewer.init(...). The SDK is opaque
+    // and may or may not honor interrupt(), but it's harmless to try — at
+    // worst it's a no-op and we fall through to the try/catch.
+    @Volatile private var initThread: Thread? = null
+
     init {
         if (creationParams == null) {
             throw RuntimeException("API and Secret keys are required")
@@ -166,6 +172,16 @@ internal class FlutterIgolfViewer(
     override fun dispose() {
         isDisposed = true
         mainHandler.removeCallbacksAndMessages(null)
+        // Best-effort: if the background viewer.init thread is still inside
+        // the SDK call, ask it to bail. The SDK is closed-source and may not
+        // honor interrupt(), in which case init() finishes its mutations
+        // before we tear the viewer down here; the try/catch in the init
+        // thread + isDisposed guard on the main-thread continuation keep
+        // the window from crashing, but there's a small window where init
+        // may leak whatever resources it allocated before we called
+        // onDestroy(). Acceptable given the window is narrow and the SDK
+        // is opaque.
+        initThread?.interrupt()
         course3DViewer.viewer.onDestroy()
     }
 
@@ -263,7 +279,7 @@ internal class FlutterIgolfViewer(
         // the parse. Move it to a background thread; bounce the View-touching
         // setters (zoom + setCurrentHole, which fires listeners that
         // ultimately go through the Flutter event channel) back to main.
-        Thread({
+        val thread = Thread({
             try {
                 course3DViewer.viewer.init(
                     vectorDataJsonMap,
@@ -281,8 +297,11 @@ internal class FlutterIgolfViewer(
                     "viewer.init failed on background thread",
                     t
                 )
+                initThread = null
                 return@Thread
             }
+
+            initThread = null
 
             mainHandler.post {
                 if (isDisposed) return@post
@@ -297,7 +316,9 @@ internal class FlutterIgolfViewer(
                     initialTeeBox
                 )
             }
-        }, "iGolf-viewer-init").start()
+        }, "iGolf-viewer-init")
+        initThread = thread
+        thread.start()
     }
 
     override fun onMethodCall(call: MethodCall, result: MethodChannel.Result) {
