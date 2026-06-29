@@ -1,5 +1,5 @@
-group 'com.filledstacks.plugins.flutter_igolf_viewer'
-version '1.0-SNAPSHOT'
+group = 'com.filledstacks.plugins.flutter_igolf_viewer'
+version = '1.0-SNAPSHOT'
 
 buildscript {
     ext.kotlin_version = '1.9.22'
@@ -14,6 +14,12 @@ buildscript {
     }
 }
 
+// The bundled iGolfViewerStandard.aar lives in android/libs and is consumed via the
+// flatDir repository below. It must be visible to every project because the consuming
+// app resolves the AAR transitively on its runtime classpath — scoping flatDir to this
+// plugin alone breaks resolution ("Could not find :iGolfViewerStandard:"). This keeps
+// the (advisory-only) "Using flatDir should be avoided" warning; it cannot be removed
+// without re-packaging the viewer AAR through a real Maven coordinate.
 rootProject.allprojects {
     repositories {
         flatDir {
@@ -35,7 +41,7 @@ apply plugin: 'kotlin-android'
 
 android {
     if (project.android.hasProperty("namespace")) {
-        namespace 'com.filledstacks.plugins.flutter_igolf_viewer'
+        namespace = 'com.filledstacks.plugins.flutter_igolf_viewer'
     }
 
     compileSdkVersion 35
