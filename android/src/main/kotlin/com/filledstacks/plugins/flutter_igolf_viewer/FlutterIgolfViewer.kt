@@ -19,6 +19,7 @@ import com.l1inc.viewer.Course3DViewer
 import com.l1inc.viewer.HoleWithinCourse
 import com.l1inc.viewer.common.Viewer.CurrentHoleChangedListener
 import com.l1inc.viewer.common.Viewer.HoleLoadingStateChangedListener
+import com.l1inc.viewer.drawing.custom.CustomOverlay
 import io.flutter.plugin.common.BinaryMessenger
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
@@ -336,6 +337,8 @@ internal class FlutterIgolfViewer(
                 "setCurrentLocationGPS" -> setCurrentLocationGPS(call, result)
                 "setMeasurementSystem" -> setMeasurementSystem(call, result)
                 "setFreeCamZoom" -> setFreeCamZoom(call, result)
+                "drawShotVision" -> drawShotVision(call, result)
+                "clearShotVision" -> clearShotVision(call, result)
                 else -> result.notImplemented()
             }
         } catch (e: RuntimeException) {
@@ -422,6 +425,72 @@ internal class FlutterIgolfViewer(
             return
         }
         course3DViewer.viewer.setFreeCamZoomScale(freeCamZoomScale(zoom))
+        result.success(null)
+    }
+
+    // --- Shot Vision (tap-to-aim overlay) ---
+    // Stable id so each new tap replaces the previous ring rather than stacking.
+    private val shotVisionDotId = 9002
+
+    /**
+     * Draws the Shot Vision overlay: a 3D rising flight arc from the tapped
+     * point up to the green centre (rendered natively as real geometry, so it
+     * leaves the ground like a shot tracer), plus a ground ring marking the
+     * tapped point. Green coords come from Dart; if absent, only the ring shows.
+     */
+    private fun drawShotVision(call: MethodCall, result: MethodChannel.Result) {
+        val targetLatitude = call.argument<Double>("targetLatitude")
+        val targetLongitude = call.argument<Double>("targetLongitude")
+        if (targetLatitude == null || targetLongitude == null) {
+            result.error("INVALID_ARGS", "Missing target latitude/longitude", null)
+            return
+        }
+
+        val target = Location("").apply {
+            latitude = targetLatitude
+            longitude = targetLongitude
+        }
+
+        val ringBorderColor = Color.argb(255, 7, 197, 255)
+        val ringFillColor = Color.argb(110, 7, 197, 255)
+
+        // Replace any prior shot.
+        course3DViewer.viewer.clearShotArc()
+        course3DViewer.viewer.removeAllDotArrays()
+
+        // 3D rising flight arc from the user's position up to the tapped target.
+        // The arc START is the viewer's own golfer position (native), so only the
+        // tapped point + look knobs (apex/width/colour) come from Dart — the
+        // knobs are tunable via hot reload without rebuilding this AAR.
+        val apexFraction = call.argument<Double>("arcApexFraction") ?: 0.16
+        val lineWidth = (call.argument<Double>("arcLineWidth") ?: 8.0).toFloat()
+        val color = call.argument<Number>("arcColor")?.toInt()
+            ?: Color.argb(255, 7, 197, 255)
+        course3DViewer.viewer.setShotArc(
+            targetLatitude,
+            targetLongitude,
+            apexFraction,
+            lineWidth,
+            color
+        )
+
+        // Ground ring marking the tapped target.
+        course3DViewer.viewer.addDotArray(
+            CustomOverlay.DotArrayBuilder(shotVisionDotId, arrayListOf(target))
+                .borderColor(ringBorderColor)
+                .fillColor(ringFillColor)
+                .borderWidth(0.8f)
+                .dotRadius(3.0f)
+                .build()
+        )
+
+        result.success(null)
+    }
+
+    private fun clearShotVision(call: MethodCall, result: MethodChannel.Result) {
+        course3DViewer.viewer.clearShotArc()
+        course3DViewer.viewer.removeAllSegmentLines()
+        course3DViewer.viewer.removeAllDotArrays()
         result.success(null)
     }
 
