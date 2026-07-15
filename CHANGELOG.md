@@ -1,3 +1,7 @@
+## 0.8.8
+
+* feat(android): Shot Vision overlay — new `drawShotVision`/`clearShotVision` method-channel handlers draw a 3D rising flight-arc ribbon from the viewer's own golfer position up to a tapped GPS target, plus a ground ring at the target. Arc apex fraction, ribbon width (metres) and colour are passed per call so consumers can tune the look from Dart without a plugin rebuild. Backed by new native `SurfaceViewer.setShotArc`/`clearShotArc` in `iGolfViewerStandard.aar` (release build; source in `viewer_sample_app` — the arc is real 3D geometry in the main render pass, so unlike the custom-overlay dots/lines it is not baked flat into the terrain). Android-only; iOS returns `notImplemented`.
+
 ## 0.8.7
 
 * fix(ios): smooth flyover heading updates by clamping rotation overshoot in the vendored `IGolfViewer3D.xcframework`
