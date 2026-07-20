@@ -2,6 +2,7 @@ package com.filledstacks.plugins.flutter_igolf_viewer.lifecycle
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 
 /**
  * Unit tests for the activity pause/resume forwarding state machine that keeps
@@ -90,6 +91,30 @@ internal class ViewerLifecycleRegistryTest {
 
         registry.onActivityResumed()
         assertEquals(listOf("pause", "resume"), viewer.events)
+    }
+
+    @Test
+    fun registerWhilePaused_whenInitialPauseFails_doesNotRetainViewer() {
+        val registry = ViewerLifecycleRegistry()
+        registry.onActivityPaused()
+        var resumeCount = 0
+        val viewer = object : PausableViewer {
+            override fun pauseRendering() {
+                throw IllegalStateException("pause failed")
+            }
+
+            override fun resumeRendering() {
+                resumeCount++
+            }
+        }
+
+        assertFailsWith<IllegalStateException> {
+            registry.register(viewer)
+        }
+
+        registry.onActivityResumed()
+
+        assertEquals(0, resumeCount)
     }
 
     @Test
