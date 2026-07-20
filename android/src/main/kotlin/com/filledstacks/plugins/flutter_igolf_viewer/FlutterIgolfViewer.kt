@@ -10,6 +10,8 @@ import android.view.View
 import android.widget.TextView
 import androidx.annotation.VisibleForTesting
 import com.filledstacks.plugins.flutter_igolf_viewer.channels.CourseViewerEventChannel
+import com.filledstacks.plugins.flutter_igolf_viewer.lifecycle.PausableViewer
+import com.filledstacks.plugins.flutter_igolf_viewer.lifecycle.ViewerLifecycleRegistry
 import com.filledstacks.plugins.flutter_igolf_viewer.network.Network
 import com.google.gson.Gson
 import com.l1inc.viewer.Course3DRenderer
@@ -45,9 +47,10 @@ internal class FlutterIgolfViewer(
     context: Context,
     messenger: BinaryMessenger,
     eventChannel: CourseViewerEventChannel,
+    private val lifecycleRegistry: ViewerLifecycleRegistry,
     id: Int,
     creationParams: Map<String?, Any?>?
-) : PlatformView, MethodChannel.MethodCallHandler {
+) : PlatformView, MethodChannel.MethodCallHandler, PausableViewer {
 
     private val course3DViewer: Course3DViewer
 
@@ -76,6 +79,20 @@ internal class FlutterIgolfViewer(
         methodChannel.setMethodCallHandler(this)
 
         course3DViewer = Course3DViewer(context)
+
+        // Keep the EGL context (shaders, programs, textures) alive across an
+        // activity pause. Only the EGL *surface* is released — which is the
+        // part that must disconnect from the Flutter texture's ImageReader —
+        // so resume skips a multi-second course reload and the SDK never
+        // deletes/recreates GL objects against a torn-down context (the
+        // glDeleteShader/glDeleteProgram 0x501 spam seen on pause).
+        course3DViewer.viewer.preserveEGLContextOnPause = true
+
+        // GLSurfaceView contract: the host must forward activity pause/resume
+        // so the GL thread releases its EGL surface (the ImageReader
+        // BufferQueue producer) before the surface is torn down or recreated.
+        // The registry is driven by the plugin's ActivityAware callbacks.
+        lifecycleRegistry.register(this)
 
         course3DViewer.viewer.setOnGPSDistancesUpdatedListener { front, center, back, cursorInsideGreen ->
             eventChannel.sendEvent(mapOf(
@@ -170,8 +187,24 @@ internal class FlutterIgolfViewer(
         return course3DViewer
     }
 
+    override fun pauseRendering() {
+        if (isDisposed) return
+        // Blocks until the GL thread has released its EGL surface, which
+        // disconnects the BufferQueue producer from the Flutter texture's
+        // ImageReader. This must complete before the surface is torn down /
+        // recreated, otherwise the resume-time reconnect is rejected with
+        // "connect: already connected" and the queue is left producer-less.
+        course3DViewer.viewer.onPause()
+    }
+
+    override fun resumeRendering() {
+        if (isDisposed) return
+        course3DViewer.viewer.onResume()
+    }
+
     override fun dispose() {
         isDisposed = true
+        lifecycleRegistry.unregister(this)
         mainHandler.removeCallbacksAndMessages(null)
         // Best-effort: if the background viewer.init thread is still inside
         // the SDK call, ask it to bail. The SDK is closed-source and may not
@@ -183,6 +216,10 @@ internal class FlutterIgolfViewer(
         // onDestroy(). Acceptable given the window is narrow and the SDK
         // is opaque.
         initThread?.interrupt()
+        // Park the GL thread and release the EGL surface first, so the
+        // ImageReader producer is disconnected and no onDrawFrame can be
+        // in flight while onDestroy() tears the renderer's GL objects down.
+        course3DViewer.viewer.onPause()
         course3DViewer.viewer.onDestroy()
     }
 
