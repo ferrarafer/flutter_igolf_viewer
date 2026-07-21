@@ -1,6 +1,6 @@
 PODS:
   - Flutter (1.0.0)
-  - flutter_igolf_viewer (0.0.1):
+  - flutter_igolf_viewer (0.8.9):
     - Flutter
   - integration_test (0.0.1):
     - Flutter
@@ -20,7 +20,7 @@ EXTERNAL SOURCES:
 
 SPEC CHECKSUMS:
   Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
-  flutter_igolf_viewer: 63f8d13f28081fc89bd6903176f3848b4a487064
+  flutter_igolf_viewer: b731ecdcbbc00102350835c96559c2d5421ee7eb
   integration_test: 252f60fa39af5e17c3aa9899d35d908a0721b573
 
 PODFILE CHECKSUM: 83f6a08c58d4b249cda5d50acce1e33fac59623c
