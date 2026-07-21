@@ -88,12 +88,6 @@ internal class FlutterIgolfViewer(
         // glDeleteShader/glDeleteProgram 0x501 spam seen on pause).
         course3DViewer.viewer.preserveEGLContextOnPause = true
 
-        // GLSurfaceView contract: the host must forward activity pause/resume
-        // so the GL thread releases its EGL surface (the ImageReader
-        // BufferQueue producer) before the surface is torn down or recreated.
-        // The registry is driven by the plugin's ActivityAware callbacks.
-        lifecycleRegistry.register(this)
-
         course3DViewer.viewer.setOnGPSDistancesUpdatedListener { front, center, back, cursorInsideGreen ->
             eventChannel.sendEvent(mapOf(
                 "event" to "GPS_DISTANCES_UPDATED",
@@ -181,6 +175,18 @@ internal class FlutterIgolfViewer(
             creationParams.get("isMetricUnits"),
             creationParams.get("freeCamZoom")
         )
+
+        // GLSurfaceView contract: the host must forward activity pause/resume
+        // so the GL thread releases its EGL surface (the ImageReader
+        // BufferQueue producer) before the surface is torn down or recreated.
+        // The registry is driven by the plugin's ActivityAware callbacks.
+        // Registration is last: if any of the construction above throws
+        // (e.g. loadCourseData rejecting creation params), Flutter never gets
+        // a PlatformView to dispose, so an earlier registration could never
+        // be unregistered and the dead viewer would keep receiving lifecycle
+        // callbacks. The constructor runs on the main thread, as do the
+        // activity lifecycle callbacks, so no pause can slip by before this.
+        lifecycleRegistry.register(this)
     }
 
     override fun getView(): View {

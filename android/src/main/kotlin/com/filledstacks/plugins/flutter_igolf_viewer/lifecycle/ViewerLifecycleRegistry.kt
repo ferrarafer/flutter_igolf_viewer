@@ -33,10 +33,13 @@ internal class ViewerLifecycleRegistry {
     private var isActivityPaused = false
 
     fun register(viewer: PausableViewer) {
-        viewers.add(viewer)
+        // Catch-up pause happens BEFORE the viewer is retained: if it throws,
+        // the registry must not keep (and later resume) a viewer whose
+        // construction is about to be aborted by the propagating exception.
         if (isActivityPaused) {
             viewer.pauseRendering()
         }
+        viewers.add(viewer)
     }
 
     fun unregister(viewer: PausableViewer) {
