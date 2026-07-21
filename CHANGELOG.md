@@ -1,3 +1,8 @@
+## 0.8.9
+
+* feat(ios): Shot Vision parity — `drawShotVision`/`clearShotVision` method-channel handlers now work on iOS, backed by new `CourseRenderView setShotArcWithTargetLatitude:…`/`clearShotArc` in the vendored `IGolfViewer3D.xcframework` (build 2026.07.22.1; source in `FilledStacks/iGolfExampleiOS`). The arc is a rising triangle-strip ribbon from the golfer marker to the target with terrain-following elevation; unlike Android the target ground ring is part of the same native drawable, so clearing is inherently scoped to Shot Vision's own overlay. Same knobs and defaults as Android (`arcApexFraction` 0.16, `arcLineWidth`, `arcColor` 0xAARRGGBB).
+* chore(ios): sync podspec version with the package version (was lagging at 0.8.7).
+
 ## 0.8.8
 
 * feat(android): Shot Vision overlay — new `drawShotVision`/`clearShotVision` method-channel handlers draw a 3D rising flight-arc ribbon from the viewer's own golfer position up to a tapped GPS target, plus a ground ring at the target. Arc apex fraction, ribbon width (metres) and colour are passed per call so consumers can tune the look from Dart without a plugin rebuild. Backed by new native `SurfaceViewer.setShotArc`/`clearShotArc` in `iGolfViewerStandard.aar` (release build; source in `viewer_sample_app` — the arc is real 3D geometry in the main render pass, so unlike the custom-overlay dots/lines it is not baked flat into the terrain). Android-only; iOS returns `notImplemented`.

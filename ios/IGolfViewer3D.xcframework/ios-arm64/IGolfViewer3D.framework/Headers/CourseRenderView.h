@@ -7,7 +7,7 @@
 //
 
 // Framework version - update this when rebuilding to verify cache is cleared
-#define IGOLF_VIEWER_BUILD_VERSION @"2026.01.07.4"
+#define IGOLF_VIEWER_BUILD_VERSION @"2026.07.22.1"
 
 #import <UIKit/UIKit.h>
 #import <GLKit/GLKit.h>
@@ -108,6 +108,20 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)dataSourceChanged;
 - (void)setSimulatedLocation:(CLLocation *)simulatedLocation;
 - (nullable CLLocation *)startPointLocation;
+
+/// Shot Vision: draws/replaces a rising flight-arc ribbon from the golfer
+/// marker position up to the target GPS point, plus a ground ring at the
+/// target. colorArgb is 0xAARRGGBB; lineWidthMeters is ribbon thickness in
+/// metres; apexFraction scales the arc peak relative to the shot distance.
+- (void)setShotArcWithTargetLatitude:(double)targetLatitude
+                     targetLongitude:(double)targetLongitude
+                        apexFraction:(double)apexFraction
+                     lineWidthMeters:(double)lineWidthMeters
+                           colorArgb:(int64_t)colorArgb;
+
+/// Shot Vision: removes the arc and ring.
+- (void)clearShotArc;
+
 - (void)invalidate;
 
 @end

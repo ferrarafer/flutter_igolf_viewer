@@ -435,6 +435,10 @@ class FlutterIgolfView: NSObject, FlutterPlatformView, CourseRenderViewDelegate 
             setCartLocationVisible(call: call, result: result)
         case "setFreeCamZoom":
             setFreeCamZoom(call: call, result: result)
+        case "drawShotVision":
+            drawShotVision(call: call, result: result)
+        case "clearShotVision":
+            clearShotVision(result: result)
         default:
             result(FlutterMethodNotImplemented)
         }
@@ -686,6 +690,46 @@ class FlutterIgolfView: NSObject, FlutterPlatformView, CourseRenderViewDelegate 
         }
 
         _wrapperView.freeCamZoomScale = freeCamZoomScale(from: zoom)
+        result(nil)
+    }
+
+    // MARK: - Shot Vision (tap-to-aim overlay)
+
+    /// Draws a 3D rising flight-arc ribbon from the viewer's own golfer
+    /// position up to the tapped GPS target, plus a ground ring at the target.
+    /// The arc start is resolved natively; only the target and look knobs come
+    /// from Dart. Defaults mirror the Android handler.
+    private func drawShotVision(call: FlutterMethodCall, result: FlutterResult) {
+        guard let args = call.arguments as? [String: Any],
+              let targetLatitude = args["targetLatitude"] as? Double,
+              let targetLongitude = args["targetLongitude"] as? Double else {
+            result(FlutterError(code: "INVALID_ARGS", message: "Missing target latitude/longitude", details: nil))
+            return
+        }
+
+        guard let renderView = _wrapperView.renderView else {
+            result(FlutterError(code: "NO_VIEW", message: "Render view not initialized", details: nil))
+            return
+        }
+
+        let apexFraction = args["arcApexFraction"] as? Double ?? 0.16
+        let lineWidthMeters = args["arcLineWidth"] as? Double ?? 8.0
+        let colorArgb = (args["arcColor"] as? NSNumber)?.int64Value ?? 0xFF07C5FF
+
+        renderView.setShotArcWithTargetLatitude(
+            targetLatitude,
+            targetLongitude: targetLongitude,
+            apexFraction: apexFraction,
+            lineWidthMeters: lineWidthMeters,
+            colorArgb: colorArgb
+        )
+        result(nil)
+    }
+
+    /// Removes the Shot Vision arc and ring. Clearing when no render view
+    /// exists is a successful no-op (nothing to clear), matching Android.
+    private func clearShotVision(result: FlutterResult) {
+        _wrapperView.renderView?.clearShotArc()
         result(nil)
     }
 
