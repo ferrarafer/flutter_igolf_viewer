@@ -497,9 +497,11 @@ internal class FlutterIgolfViewer(
         val ringBorderColor = Color.argb(255, 7, 197, 255)
         val ringFillColor = Color.argb(110, 7, 197, 255)
 
-        // Replace any prior shot.
+        // Replace any prior shot. Shot Vision owns only the arc and its own
+        // ring (shotVisionDotId) — removing by id keeps dot arrays drawn by
+        // other features intact. removeDotArray on an absent id is a no-op.
         course3DViewer.viewer.clearShotArc()
-        course3DViewer.viewer.removeAllDotArrays()
+        course3DViewer.viewer.removeDotArray(shotVisionDotId)
 
         // 3D rising flight arc from the user's position up to the tapped target.
         // The arc START is the viewer's own golfer position (native), so only the
@@ -531,9 +533,11 @@ internal class FlutterIgolfViewer(
     }
 
     private fun clearShotVision(call: MethodCall, result: MethodChannel.Result) {
+        // Clear only what Shot Vision created: the arc and its ground ring.
+        // It never draws segment lines, and blanket removeAll* calls would
+        // wipe custom overlays owned by other features.
         course3DViewer.viewer.clearShotArc()
-        course3DViewer.viewer.removeAllSegmentLines()
-        course3DViewer.viewer.removeAllDotArrays()
+        course3DViewer.viewer.removeDotArray(shotVisionDotId)
         result.success(null)
     }
 
