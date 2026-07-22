@@ -7,7 +7,7 @@
 //
 
 // Framework version - update this when rebuilding to verify cache is cleared
-#define IGOLF_VIEWER_BUILD_VERSION @"2026.07.22.1"
+#define IGOLF_VIEWER_BUILD_VERSION @"2026.07.22.2"
 
 #import <UIKit/UIKit.h>
 #import <GLKit/GLKit.h>
