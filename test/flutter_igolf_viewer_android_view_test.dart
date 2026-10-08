@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_igolf_viewer/flutter_igolf_viewer.dart';
@@ -33,9 +32,6 @@ void main() {
   // restarts the whole system UI. Hybrid composition has no virtual display.
   testWidgets('embeds the Android view with hybrid composition',
       (tester) async {
-    debugDefaultTargetPlatformOverride = TargetPlatform.android;
-    addTearDown(() => debugDefaultTargetPlatformOverride = null);
-
     await tester.pumpWidget(
       const Directionality(textDirection: TextDirection.ltr, child: viewer),
     );
@@ -47,5 +43,5 @@ void main() {
     final arguments = create.arguments as Map<Object?, Object?>;
     expect(arguments['viewType'], 'flutter_igolf_viewer');
     expect(arguments['hybrid'], isTrue);
-  });
+  }, variant: TargetPlatformVariant.only(TargetPlatform.android));
 }
