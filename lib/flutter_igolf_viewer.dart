@@ -1,4 +1,6 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -52,12 +54,7 @@ class FlutterIgolfViewer extends StatelessWidget {
 
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
-        return AndroidView(
-          viewType: viewType,
-          layoutDirection: TextDirection.ltr,
-          creationParams: creationParams,
-          creationParamsCodec: const StandardMessageCodec(),
-        );
+        return _buildAndroidView(viewType);
       case TargetPlatform.iOS:
         return UiKitView(
           viewType: viewType,
@@ -70,5 +67,32 @@ class FlutterIgolfViewer extends StatelessWidget {
           'Platform $defaultTargetPlatform is not yet supported by flutter_igolf_viewer.',
         );
     }
+  }
+
+  /// Hybrid composition, not a plain [AndroidView]: the viewer is a
+  /// GLSurfaceView, so [AndroidView] falls back to a virtual display that
+  /// Flutter recreates on every pause/resume. On MediaTek hwcomposers (the
+  /// Caddie) that recreate crashes surfaceflinger and restarts the system UI.
+  Widget _buildAndroidView(String viewType) {
+    return PlatformViewLink(
+      viewType: viewType,
+      surfaceFactory: (context, controller) => AndroidViewSurface(
+        controller: controller as AndroidViewController,
+        gestureRecognizers: const <Factory<OneSequenceGestureRecognizer>>{},
+        hitTestBehavior: PlatformViewHitTestBehavior.opaque,
+      ),
+      onCreatePlatformView: (params) {
+        return PlatformViewsService.initExpensiveAndroidView(
+          id: params.id,
+          viewType: viewType,
+          layoutDirection: TextDirection.ltr,
+          creationParams: creationParams,
+          creationParamsCodec: const StandardMessageCodec(),
+          onFocus: () => params.onFocusChanged(true),
+        )
+          ..addOnPlatformViewCreatedListener(params.onPlatformViewCreated)
+          ..create();
+      },
+    );
   }
 }
